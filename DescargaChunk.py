@@ -314,7 +314,7 @@ if __name__ == '__main__':
     ruta_descarga = r'C:\Users\bbartolome\Downloads'
     canal = f"\{opcion}"
     
-    fechas = ['01/09/2026', '01/11/2026'] #"mm/dd/yyyy"
+    fechas = ['01/13/2026', '01/13/2026'] #"mm/dd/yyyy"
     opciones = ['',f'{opcion}']
     
     load_dotenv(dotenv_path='credenciales.env')
@@ -366,7 +366,7 @@ if __name__ == '__main__':
 
     print(f"\n--- 2. INICIO DE DESCARGAS PARALELAS con {MAX_PROCESOS} procesos ---")
 
-    chunks_uids = list(dividir_en_chunks(lista_uids, 4))
+    chunks_uids = list(dividir_en_chunks(lista_uids, 5))
 
     with concurrent.futures.ProcessPoolExecutor(max_workers=MAX_PROCESOS) as executor:
         
