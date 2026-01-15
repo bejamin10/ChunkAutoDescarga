@@ -17,6 +17,8 @@ from selenium.common.exceptions import TimeoutException, WebDriverException
 
 import concurrent.futures
 
+import requests
+
 
 def descargar_session_individual(session_uid, url_web, ruta_descarga, canal, fechas, opciones, estado):
     
@@ -98,6 +100,7 @@ def descargar_session_individual(session_uid, url_web, ruta_descarga, canal, fec
     load_dotenv(dotenv_path='credenciales.env')
     usuario_arca = os.getenv('usuario_arca')
     password = os.getenv('contraseña_arca')
+
     
     driver = None
     ruta_completa_descarga = ruta_descarga + canal
@@ -146,7 +149,10 @@ def descargar_session_individual(session_uid, url_web, ruta_descarga, canal, fec
         print("CORRIDA 1")
         button_search = tipo_elemento(driver, div_apply_filtro_survey,'clickable')
         button_search.click()
-        time.sleep(5)
+        time.sleep(3)
+        fila_aparece_1 = tipo_elemento_css(driver, div_fila_css, 'css', timeout=120)
+        fila_aparece_1.text
+
         print("CORRIDA 2")
         
         if estado ==  "0":
@@ -172,24 +178,26 @@ def descargar_session_individual(session_uid, url_web, ruta_descarga, canal, fec
 
                 filtro = driver.find_element(By.XPATH,div_filtro)
                 driver.execute_script("arguments[0].click();", filtro)
-                time.sleep(1)
+                time.sleep(0.5)
 
                 input_id_session = tipo_elemento(driver,div_input_filtro,'clickable')
-                time.sleep(1)
+                time.sleep(0.5)
                 input_id_session.send_keys(Keys.CONTROL + 'a')
-                time.sleep(1)
+                time.sleep(0.5)
                 input_id_session.send_keys(Keys.DELETE)
-                time.sleep(1)
+                time.sleep(0.5)
                 
                 input_id_session.send_keys(session) 
-                time.sleep(2)
+                time.sleep(0.5)
                 input_id_session.send_keys(Keys.ENTER)
-                time.sleep(3)
+                time.sleep(0.5)
 
-                fila_aparece = tipo_elemento_css(driver, div_fila_css, 'css', timeout=30)
+                fila_aparece_2 = tipo_elemento_css(driver, div_fila_css, 'css', timeout=120)
+                fila_aparece_2.text
+
                 filas = driver.find_elements(By.CSS_SELECTOR, div_fila_css)
                 ActionChains(driver).double_click(filas[0]).perform()
-                time.sleep(2)
+                time.sleep(1)
                 
             cod_ventana_principal = driver.current_window_handle
             cod_ventanas = driver.window_handles
@@ -205,19 +213,25 @@ def descargar_session_individual(session_uid, url_web, ruta_descarga, canal, fec
                         driver.switch_to.window(h)
 
                         esperar_invisibilidad(driver, pag_carga, timeout=10)
-                        time.sleep(3)
+                        time.sleep(1)
                         
                         button_export = tipo_elemento(driver, div_export,'clickable')
                         button_export.click()
-                        time.sleep(3)
+                        time.sleep(1)
+                
+                for h in cod_ventanas:
+
+                    if h != cod_ventana_principal:    
                         
+                        driver.switch_to.window(h)
+
                         esperar_invisibilidad(driver, pag_carga, timeout=60)
-                        time.sleep(3)
+                        time.sleep(1)
 
                         driver.close()
 
                 driver.switch_to.window(cod_ventana_principal)
-                time.sleep(2)
+                time.sleep(1)
                 
                 print(f"[{session_uid}] Descarga finalizada exitosamente.")
                 return f"Éxito: {session_uid}"
@@ -241,6 +255,9 @@ def descargar_session_individual(session_uid, url_web, ruta_descarga, canal, fec
 # --- LÓGICA PRINCIPAL DE PRE-PROCESAMIENTO Y EJECUCIÓN PARALELA ---
 
 if __name__ == '__main__':
+
+    correo = os.getenv('correo')
+    contraseña = os.getenv('contra')
 
     def mover_descargas(opcion):
         
@@ -314,7 +331,7 @@ if __name__ == '__main__':
     ruta_descarga = r'C:\Users\bbartolome\Downloads'
     canal = f"\{opcion}"
     
-    fechas = ['01/13/2026', '01/13/2026'] #"mm/dd/yyyy"
+    fechas = ['01/01/2026', '01/13/2026'] #"mm/dd/yyyy"
     opciones = ['',f'{opcion}']
     
     load_dotenv(dotenv_path='credenciales.env')
@@ -340,7 +357,7 @@ if __name__ == '__main__':
         for i in range(0,len(lista), tamanio):
             yield lista[i:i + tamanio]
 
-    descargar_session_individual("NaN", url_web, ruta_descarga, canal, fechas, opciones, "0")
+    #descargar_session_individual("NaN", url_web, ruta_descarga, canal, fechas, opciones, "0")
 
     try:
         ruta_descargas_carpetas = ruta_descarga + canal
@@ -366,7 +383,7 @@ if __name__ == '__main__':
 
     print(f"\n--- 2. INICIO DE DESCARGAS PARALELAS con {MAX_PROCESOS} procesos ---")
 
-    chunks_uids = list(dividir_en_chunks(lista_uids, 5))
+    chunks_uids = list(dividir_en_chunks(lista_uids, 12))
 
     with concurrent.futures.ProcessPoolExecutor(max_workers=MAX_PROCESOS) as executor:
         
@@ -387,5 +404,7 @@ if __name__ == '__main__':
     print("\n--- 3. PROCESO PARALELO FINALIZADO ---\n")
 
     mover_descargas(opcion)
+
+    requests.post("https://ntfy.sh/descarga_auto_chunk", data="El proceso terminó")
 
 
