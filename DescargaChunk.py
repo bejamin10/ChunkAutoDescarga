@@ -83,6 +83,10 @@ def descargar_session_individual(session_uid, url_web, ruta_descarga, canal, fec
         boton_survey_rvw = tipo_elemento(driver, xpath_rvw, 'clickable', timeout=30)
         boton_survey_rvw.click()
         filtro_survey(driver)
+
+    def div_grilla(valor):
+        fila = f"div.ag-row[row-index='{valor}']"
+        return fila
         
 
     pag_carga = "//div[contains(@class, 'ant-modal-content')]"
@@ -90,7 +94,7 @@ def descargar_session_individual(session_uid, url_web, ruta_descarga, canal, fec
     div_export = '/html/body/div[1]/div/div[1]/div[2]/button[3]'
     div_filtro = "/html/body/div[1]/div/div[2]/div[1]/div/div[2]/div[2]/div/div[2]/div[1]/div[2]/div[1]/div[3]/div[1]/div[2]/div[1]/div[2]/div/div/div[2]/div[2]/div/span/span"
     div_input_filtro = '/html/body/div[1]/div/div[2]/div[1]/div/div[2]/div[2]/div/div[2]/div[1]/div[2]/div[1]/div[3]/div[3]/div/div[3]/div/div/div/div/div[1]/div/input[1]'
-    div_fila_css = "div.ag-row[row-index='0']"
+    #div_fila_css = "div.ag-row[row-index='0']"
 
     #NUEVOS PATHS
     #div_apply_filtro_survey = '/html/body/div[4]/div/div/div/div[1]/div/div[3]/button[2]'
@@ -150,6 +154,7 @@ def descargar_session_individual(session_uid, url_web, ruta_descarga, canal, fec
         button_search = tipo_elemento(driver, div_apply_filtro_survey,'clickable')
         button_search.click()
         time.sleep(3)
+        div_fila_css = div_grilla(0)
         fila_aparece_1 = tipo_elemento_css(driver, div_fila_css, 'css', timeout=120)
         fila_aparece_1.text
 
@@ -174,33 +179,43 @@ def descargar_session_individual(session_uid, url_web, ruta_descarga, canal, fec
 
         else:
             
-            for session in session_uid:
+            codigos = ','.join(session_uid)
 
-                filtro = driver.find_element(By.XPATH,div_filtro)
-                driver.execute_script("arguments[0].click();", filtro)
-                time.sleep(0.5)
+            filtro = driver.find_element(By.XPATH,div_filtro)
+            driver.execute_script("arguments[0].click();", filtro)
+            time.sleep(0.5)
 
-                input_id_session = tipo_elemento(driver,div_input_filtro,'clickable')
-                time.sleep(0.5)
-                input_id_session.send_keys(Keys.CONTROL + 'a')
-                time.sleep(0.5)
-                input_id_session.send_keys(Keys.DELETE)
-                time.sleep(0.5)
+            input_id_session = tipo_elemento(driver,div_input_filtro,'clickable')
+            time.sleep(0.5)
+            input_id_session.send_keys(Keys.CONTROL + 'a')
+            time.sleep(0.5)
+            input_id_session.send_keys(Keys.DELETE)
+            time.sleep(0.5)
+            
+            input_id_session.send_keys(codigos) 
+            time.sleep(0.5)
+            input_id_session.send_keys(Keys.ENTER)
+            time.sleep(0.5)
+
+            fila_aparece_2 = tipo_elemento_css(driver, div_fila_css, 'css', timeout=120)
+            fila_aparece_2.text
+
+            for i in range(0, 10):
+
+                div_fila_css = div_grilla(i)
+                fila = driver.find_element(By.CSS_SELECTOR, div_fila_css)
+
+                if i >= len(fila):
+                    break
+
                 
-                input_id_session.send_keys(session) 
-                time.sleep(0.5)
-                input_id_session.send_keys(Keys.ENTER)
-                time.sleep(0.5)
+                #fila = filas[i]
+                ActionChains(driver).double_click(fila).perform()
+                time.sleep(2)
 
-                fila_aparece_2 = tipo_elemento_css(driver, div_fila_css, 'css', timeout=120)
-                fila_aparece_2.text
-
-                filas = driver.find_elements(By.CSS_SELECTOR, div_fila_css)
-                ActionChains(driver).double_click(filas[0]).perform()
-                time.sleep(1)
-                
             cod_ventana_principal = driver.current_window_handle
             cod_ventanas = driver.window_handles
+
 
             if len(cod_ventanas) > 1:
 
@@ -357,7 +372,7 @@ if __name__ == '__main__':
         for i in range(0,len(lista), tamanio):
             yield lista[i:i + tamanio]
 
-    #descargar_session_individual("NaN", url_web, ruta_descarga, canal, fechas, opciones, "0")
+    descargar_session_individual("NaN", url_web, ruta_descarga, canal, fechas, opciones, "0")
 
     try:
         ruta_descargas_carpetas = ruta_descarga + canal
