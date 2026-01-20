@@ -93,8 +93,9 @@ def descargar_session_individual(session_uid, url_web, ruta_descarga, canal, fec
     div_excel = '/html/body/div[3]/div/ul/li[1]'
     div_export = '/html/body/div[1]/div/div[1]/div[2]/button[3]'
     div_filtro = "/html/body/div[1]/div/div[2]/div[1]/div/div[2]/div[2]/div/div[2]/div[1]/div[2]/div[1]/div[3]/div[1]/div[2]/div[1]/div[2]/div/div/div[2]/div[2]/div/span/span"
-    div_input_filtro = '/html/body/div[1]/div/div[2]/div[1]/div/div[2]/div[2]/div/div[2]/div[1]/div[2]/div[1]/div[3]/div[3]/div/div[3]/div/div/div/div/div[1]/div/input[1]'
-    #div_fila_css = "div.ag-row[row-index='0']"
+    #div_input_filtro = '/html/body/div[1]/div/div[2]/div[1]/div/div[2]/div[2]/div/div[2]/div[1]/div[2]/div[1]/div[3]/div[3]/div/div[3]/div/div/div/div/div[1]/div/input[1]'
+    div_input_filtro = '/html/body/div/div/div[2]/div[1]/div/div[2]/div[2]/div/div[2]/div[1]/div[2]/div[1]/div[3]/div[3]/div/div[3]/div/div/div/div/div[1]/div/input[2]'
+    #div_fila_css = "div.ag-row[row-index='5']"
 
     #NUEVOS PATHS
     #div_apply_filtro_survey = '/html/body/div[4]/div/div/div/div[1]/div/div[3]/button[2]'
@@ -154,7 +155,7 @@ def descargar_session_individual(session_uid, url_web, ruta_descarga, canal, fec
         button_search = tipo_elemento(driver, div_apply_filtro_survey,'clickable')
         button_search.click()
         time.sleep(3)
-        div_fila_css = div_grilla(0)
+        div_fila_css = div_grilla(5)
         fila_aparece_1 = tipo_elemento_css(driver, div_fila_css, 'css', timeout=120)
         fila_aparece_1.text
 
@@ -198,20 +199,20 @@ def descargar_session_individual(session_uid, url_web, ruta_descarga, canal, fec
             time.sleep(0.5)
 
             fila_aparece_2 = tipo_elemento_css(driver, div_fila_css, 'css', timeout=120)
-            fila_aparece_2.text
+            print(fila_aparece_2.text)
+            print("Pase el reconocimiento de la fila 10 de la tabla")
+            
+            for i in range(0, len(session_uid)):
 
-            for i in range(0, 10):
+                #div_fila_css_i = div_grilla(i)
+                #fila = driver.find_elements(By.CSS_SELECTOR, div_fila_css_i)
+                filas = div_grilla(i)
+                fila_aparece_final = tipo_elemento_css(driver, filas, 'css', timeout=120)
+                #if i >= len(filas):
+                #    break
 
-                div_fila_css = div_grilla(i)
-                fila = driver.find_element(By.CSS_SELECTOR, div_fila_css)
-
-                if i >= len(fila):
-                    break
-
-                
-                #fila = filas[i]
-                ActionChains(driver).double_click(fila).perform()
-                time.sleep(2)
+                ActionChains(driver).double_click(fila_aparece_final).perform()
+                time.sleep(0.5)
 
             cod_ventana_principal = driver.current_window_handle
             cod_ventanas = driver.window_handles
@@ -346,7 +347,7 @@ if __name__ == '__main__':
     ruta_descarga = r'C:\Users\bbartolome\Downloads'
     canal = f"\{opcion}"
     
-    fechas = ['01/01/2026', '01/13/2026'] #"mm/dd/yyyy"
+    fechas = ['01/20/2026', '01/20/2026'] #"mm/dd/yyyy"
     opciones = ['',f'{opcion}']
     
     load_dotenv(dotenv_path='credenciales.env')
@@ -372,7 +373,7 @@ if __name__ == '__main__':
         for i in range(0,len(lista), tamanio):
             yield lista[i:i + tamanio]
 
-    descargar_session_individual("NaN", url_web, ruta_descarga, canal, fechas, opciones, "0")
+    #descargar_session_individual("NaN", url_web, ruta_descarga, canal, fechas, opciones, "0")
 
     try:
         ruta_descargas_carpetas = ruta_descarga + canal
@@ -394,7 +395,7 @@ if __name__ == '__main__':
         print(f"ERROR FATAL: Fallo en el pre-procesamiento para obtener la lista de UIDs. {e}")
         sys.exit(1)
     
-    MAX_PROCESOS = 5 # Número de navegadores/procesos concurrentes
+    MAX_PROCESOS = 1 # Número de navegadores/procesos concurrentes
 
     print(f"\n--- 2. INICIO DE DESCARGAS PARALELAS con {MAX_PROCESOS} procesos ---")
 
