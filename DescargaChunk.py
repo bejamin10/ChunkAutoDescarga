@@ -6,6 +6,7 @@ import math
 import sys
 from dotenv import load_dotenv
 import shutil
+from collections import Counter
 
 from selenium import webdriver
 from selenium.webdriver.support.ui import WebDriverWait 
@@ -16,7 +17,6 @@ from selenium.webdriver.common.action_chains import ActionChains
 from selenium.common.exceptions import TimeoutException, WebDriverException
 
 import concurrent.futures
-
 import requests
 
 
@@ -256,9 +256,6 @@ def descargar_session_individual(session_uid, url_web, ruta_descarga, canal, fec
 
 if __name__ == '__main__':
 
-    correo = os.getenv('correo')
-    contraseña = os.getenv('contra')
-
     def mover_descargas(opcion):
         
         rt2 = f'\{opcion}'
@@ -272,11 +269,9 @@ if __name__ == '__main__':
             ruta_destino = r'C:\Users\bbartolome\Desktop\CODBARRA\CARPETA2'
             #ruta_destino = r'C:\Users\bbartolome\OneDrive - Lock & Asociados\Gestión TI - PROYECTO LINDLEY\PBI-ACL-Archivos\ValidarAASS_NOV'
 
-
         patron_excel = 'Session_export*.xlsx'
         ruta_patron = os.path.join(ruta_origen, patron_excel)
         archivos_a_mover = glob.glob(ruta_patron)
-
 
         if not archivos_a_mover:
             print("No se encontraron archivos")
@@ -298,6 +293,7 @@ if __name__ == '__main__':
                 except Exception as e:
                     print(f"Error al mover {nombre_archivo}: {e}")
 
+#-----------------------------------------------------------------------------------------------------------------------------------------
 
     def Canal_Lindley():
         
@@ -325,13 +321,14 @@ if __name__ == '__main__':
             
             except ValueError:
                 print(f"Entrada inválida: No es un número. Por favor, ingrese un número.")
-                
+
+#-----------------------------------------------------------------------------------------------------------------------------------------  
     
     opcion = Canal_Lindley()
     ruta_descarga = r'C:\Users\bbartolome\Downloads'
     canal = f"\{opcion}"
     
-    fechas = ['01/01/2026', '01/13/2026'] #"mm/dd/yyyy"
+    fechas = ['01/17/2026', '01/20/2026'] #"mm/dd/yyyy"
     opciones = ['',f'{opcion}']
     
     load_dotenv(dotenv_path='credenciales.env')
@@ -339,6 +336,8 @@ if __name__ == '__main__':
 
     # --- 1. PROCESO SECUENCIAL PREVIO (Obtener lista de UIDs) ---
     
+#-----------------------------------------------------------------------------------------------------------------------------------------
+
     def subir_excel(archivos_encontrados, patron):
         if not archivos_encontrados:
             print(f"No se encontró ningún archivo que coincida con el patrón: {patron}")
@@ -352,12 +351,43 @@ if __name__ == '__main__':
             except Exception as e:
                 print(f"Error al intentar cargar el archivo: {e}")
                 return None
-    
+
+#-----------------------------------------------------------------------------------------------------------------------------------------
+
     def dividir_en_chunks(lista, tamanio):
         for i in range(0,len(lista), tamanio):
             yield lista[i:i + tamanio]
 
+#-----------------------------------------------------------------------------------------------------------------------------------------
+
+    def verificar_resultados(opcion, lista_uid):
+
+        if opcion == 'C-STORE':
+            ruta_carga = r'C:\Users\bbartolome\Desktop\CODBARRA\CARPETA1'
+        else:
+            ruta_carga = r'C:\Users\bbartolome\Desktop\CODBARRA\CARPETA2'
+        
+        archivos_encontrados = glob.glob(os.path.join(ruta_carga, '*.xlsx'))
+        dataframes = []
+
+        for archivo in archivos_encontrados:
+
+            Dataframe_resultados = pd.read_excel(archivo)
+            dataframes.append(Dataframe_resultados)
+
+            if dataframes:
+                df_completo = pd.concat(dataframes, ignore_index= True)
+
+        lista_resultados_uids = df_completo['SessionUID'].tolist()
+        lista_faltantes = list((Counter(lista_uid) - Counter(lista_resultados_uids)).elements())
+
+        return lista_faltantes
+    
+#-----------------------------------------------------------------------------------------------------------------------------------------
+
     #descargar_session_individual("NaN", url_web, ruta_descarga, canal, fechas, opciones, "0")
+
+#-----------------------------------------------------------------------------------------------------------------------------------------
 
     try:
         ruta_descargas_carpetas = ruta_descarga + canal
@@ -379,31 +409,45 @@ if __name__ == '__main__':
         print(f"ERROR FATAL: Fallo en el pre-procesamiento para obtener la lista de UIDs. {e}")
         sys.exit(1)
     
+#-----------------------------------------------------------------------------------------------------------------------------------------
+    
     MAX_PROCESOS = 5 # Número de navegadores/procesos concurrentes
 
-    print(f"\n--- 2. INICIO DE DESCARGAS PARALELAS con {MAX_PROCESOS} procesos ---")
+    def Concurrencia(lista_uids):
 
-    chunks_uids = list(dividir_en_chunks(lista_uids, 12))
+        print(f"\n--- 2. INICIO DE DESCARGAS PARALELAS con {MAX_PROCESOS} procesos ---")
 
-    with concurrent.futures.ProcessPoolExecutor(max_workers=MAX_PROCESOS) as executor:
-        
-        resultados = executor.map(
-            descargar_session_individual,
-            chunks_uids,
-            [url_web] * len(lista_uids),
-            [ruta_descarga] * len(lista_uids),
-            [canal] * len(lista_uids),
-            [fechas] * len(lista_uids),
-            [opciones] * len(lista_uids),
-            ["1"] * len(lista_uids)
-        )
-        
-        for resultado in resultados:
-            print(f"Resultado final: {resultado}")
+        chunks_uids = list(dividir_en_chunks(lista_uids, 12))
+
+        with concurrent.futures.ProcessPoolExecutor(max_workers=MAX_PROCESOS) as executor:
             
-    print("\n--- 3. PROCESO PARALELO FINALIZADO ---\n")
+            resultados = executor.map(
+                descargar_session_individual,
+                chunks_uids,
+                [url_web] * len(lista_uids),
+                [ruta_descarga] * len(lista_uids),
+                [canal] * len(lista_uids),
+                [fechas] * len(lista_uids),
+                [opciones] * len(lista_uids),
+                ["1"] * len(lista_uids)
+            )
+            
+            for resultado in resultados:
+                print(f"Resultado final: {resultado}")
+                
+        print("\n--- 3. PROCESO PARALELO FINALIZADO ---\n")
 
+    Concurrencia(lista_uids)
     mover_descargas(opcion)
+    lista_rezagados = verificar_resultados(opcion, lista_uids)
+
+    if len(lista_rezagados) == 0:
+        print("Todas las mediciones fueron descargadas")
+
+    else:
+        print(f"No fueron descargadas {len(lista_rezagados)} mediciones. Se retoma concurrencia\n")
+        Concurrencia(lista_rezagados)
+
 
     requests.post("https://ntfy.sh/descarga_auto_chunk", data="El proceso terminó")
 
