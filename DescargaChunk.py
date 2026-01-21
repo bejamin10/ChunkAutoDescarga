@@ -334,6 +334,7 @@ if __name__ == '__main__':
     ruta_descarga = r'C:\Users\bbartolome\Downloads'
     canal = f"\{opcion}"
     
+    
     fechas = ['01/20/2026', '01/20/2026'] #"mm/dd/yyyy"
     opciones = ['',f'{opcion}']
     
