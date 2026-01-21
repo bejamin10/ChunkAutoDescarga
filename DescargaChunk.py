@@ -104,6 +104,7 @@ def descargar_session_individual(session_uid, url_web, ruta_descarga, canal, fec
     
     driver = None
     ruta_completa_descarga = ruta_descarga + canal
+    band = True
 
     try:
         print(f"[{session_uid}] Iniciando proceso de descarga...")
@@ -166,11 +167,17 @@ def descargar_session_individual(session_uid, url_web, ruta_descarga, canal, fec
             button_excel = tipo_elemento(driver,div_excel,'existente')
             button_excel.click()
             
-            #AQUI SE ABRE OTRA VENTANA.
-            #DEBEMOS CONTAR LAS VENTANAS ACTUALES Y CUANDO HAYA SOLO 1 VENTANA ACTIVA QUIERE DECIR QUE YA SE DESCARGÓ EL EXCEL
-            #RECIEN AHI PODREMOS CERRAR EL DRIVER
-            #POR MIENTRAS USAREMOS EL TIME SLEEP(8)
-            time.sleep(8)
+            while band:
+
+                listado = os.listdir(ruta_completa_descarga)
+                es_excel = any(f.endswith(".XLSX") for f in listado)
+
+                if len(listado) != 0 and es_excel:
+                    band = False
+                
+                time.sleep(2)
+
+            print("Se logró descargar listado \n")
 
         else:
             
@@ -323,12 +330,14 @@ if __name__ == '__main__':
                 print(f"Entrada inválida: No es un número. Por favor, ingrese un número.")
 
 #-----------------------------------------------------------------------------------------------------------------------------------------  
-    
+#    VARIABLES
+#-----------------------------------------------------------------------------------------------------------------------------------------
+
     opcion = Canal_Lindley()
     ruta_descarga = r'C:\Users\bbartolome\Downloads'
     canal = f"\{opcion}"
     
-    fechas = ['01/17/2026', '01/20/2026'] #"mm/dd/yyyy"
+    fechas = ['01/01/2026', '01/20/2026'] #"mm/dd/yyyy"
     opciones = ['',f'{opcion}']
     
     load_dotenv(dotenv_path='credenciales.env')
@@ -385,7 +394,7 @@ if __name__ == '__main__':
     
 #-----------------------------------------------------------------------------------------------------------------------------------------
 
-    #descargar_session_individual("NaN", url_web, ruta_descarga, canal, fechas, opciones, "0")
+    descargar_session_individual("NaN", url_web, ruta_descarga, canal, fechas, opciones, "0")
 
 #-----------------------------------------------------------------------------------------------------------------------------------------
 
@@ -437,7 +446,7 @@ if __name__ == '__main__':
                 
         print("\n--- 3. PROCESO PARALELO FINALIZADO ---\n")
 
-    Concurrencia(lista_uids)
+    """Concurrencia(lista_uids)
     mover_descargas(opcion)
     lista_rezagados = verificar_resultados(opcion, lista_uids)
 
@@ -447,8 +456,9 @@ if __name__ == '__main__':
     else:
         print(f"No fueron descargadas {len(lista_rezagados)} mediciones. Se retoma concurrencia\n")
         Concurrencia(lista_rezagados)
+        mover_descargas(opcion)
 
 
     requests.post("https://ntfy.sh/descarga_auto_chunk", data="El proceso terminó")
-
+    """
 
