@@ -100,7 +100,6 @@ def descargar_session_individual(session_uid, url_web, ruta_descarga, canal, fec
     load_dotenv(dotenv_path='credenciales.env')
     usuario_arca = os.getenv('usuario_arca')
     password = os.getenv('contraseña_arca')
-
     
     driver = None
     ruta_completa_descarga = ruta_descarga + canal
@@ -129,6 +128,7 @@ def descargar_session_individual(session_uid, url_web, ruta_descarga, canal, fec
         time.sleep(1)
 
         for i in range(2,9):
+
             if i == 2 or i == 8:
                 div_org_c_store = opciones_div(i,'filtro')
                 input_org_c_tore = tipo_elemento(driver,div_org_c_store,'clickable')
@@ -136,6 +136,7 @@ def descargar_session_individual(session_uid, url_web, ruta_descarga, canal, fec
                 time.sleep(2)
                 input_org_c_tore.send_keys(Keys.ENTER)
                 time.sleep(1)
+
             elif i == 4 or i == 5:
                 div_fechas = opciones_div(i, 'filtro')
                 input_fecha = tipo_elemento(driver, div_fechas,'clickable')
@@ -157,6 +158,7 @@ def descargar_session_individual(session_uid, url_web, ruta_descarga, canal, fec
         print("CORRIDA 2")
         
         if estado ==  "0":
+
             #click al botón exportar
             div_export_survey = opciones_div(2, 'div_export_filtro')
             button_export_survey = tipo_elemento(driver, div_export_survey,'clickable')
@@ -262,6 +264,28 @@ def descargar_session_individual(session_uid, url_web, ruta_descarga, canal, fec
 # --- LÓGICA PRINCIPAL DE PRE-PROCESAMIENTO Y EJECUCIÓN PARALELA ---
 
 if __name__ == '__main__':
+
+    def eliminar_archivos_pasados(canal):
+
+        if canal == 'AUTOSERVICIO':    
+            ruta_canal = glob.glob(r'C:\Users\bbartolome\Downloads\AUTOSERVICIO\*')
+            ruta_descarga = glob.glob(r'C:\Users\bbartolome\Desktop\CODBARRA\CARPETA1\*')
+        else:
+            ruta_canal = glob.glob(r'C:\Users\bbartolome\Downloads\C-STORE\*')
+            ruta_descarga = glob.glob(r'C:\Users\bbartolome\Desktop\CODBARRA\CARPETA1\*' )
+
+        archivos_totales = ruta_canal + ruta_descarga
+
+        for f in archivos_totales:     
+            try:
+                os.remove(f)
+
+            except OSError:
+                print("Error al borrar, es una subcarpeta!!")
+        
+        print(f"Se eliminaron {len(archivos_totales)} archivos")
+
+#-----------------------------------------------------------------------------------------------------------------------------------------
 
     def mover_descargas(opcion):
         
@@ -394,6 +418,7 @@ if __name__ == '__main__':
     
 #-----------------------------------------------------------------------------------------------------------------------------------------
 
+    eliminar_archivos_pasados(opcion)
     descargar_session_individual("NaN", url_web, ruta_descarga, canal, fechas, opciones, "0")
 
 #-----------------------------------------------------------------------------------------------------------------------------------------
@@ -446,7 +471,7 @@ if __name__ == '__main__':
                 
         print("\n--- 3. PROCESO PARALELO FINALIZADO ---\n")
 
-    """Concurrencia(lista_uids)
+    Concurrencia(lista_uids)
     mover_descargas(opcion)
     lista_rezagados = verificar_resultados(opcion, lista_uids)
 
@@ -460,5 +485,5 @@ if __name__ == '__main__':
 
 
     requests.post("https://ntfy.sh/descarga_auto_chunk", data="El proceso terminó")
-    """
+    
 
