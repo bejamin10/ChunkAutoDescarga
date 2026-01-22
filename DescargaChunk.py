@@ -27,7 +27,7 @@ def descargar_session_individual(session_uid, url_web, ruta_descarga, canal, fec
             WebDriverWait(driver, timeout).until(EC.invisibility_of_element_located((By.XPATH, ruta)))
             return True
         except TimeoutException:
-            print(f"[{session_uid}] Demasiada espera por invisibilidad.")
+            print(f"[{session_uid}] \nDemasiada espera por invisibilidad.")
             return True 
 
     def tipo_elemento(driver, ruta, elemento, timeout=60):
@@ -106,7 +106,7 @@ def descargar_session_individual(session_uid, url_web, ruta_descarga, canal, fec
     band = True
 
     try:
-        print(f"[{session_uid}] Iniciando proceso de descarga...")
+        print(f"[{session_uid}] \nIniciando proceso de descarga...")
         
         options_driver = webdriver.ChromeOptions()
         options_driver.add_argument('--disable-extensions')
@@ -148,14 +148,12 @@ def descargar_session_individual(session_uid, url_web, ruta_descarga, canal, fec
                 input_fecha.send_keys(Keys.ENTER)
                 time.sleep(2)
         
-        print("CORRIDA 1")
         button_search = tipo_elemento(driver, div_apply_filtro_survey,'clickable')
         button_search.click()
         time.sleep(3)
         fila_aparece_1 = tipo_elemento_css(driver, div_fila_css, 'css', timeout=120)
         fila_aparece_1.text
 
-        print("CORRIDA 2")
         
         if estado ==  "0":
 
@@ -208,6 +206,7 @@ def descargar_session_individual(session_uid, url_web, ruta_descarga, canal, fec
                 ActionChains(driver).double_click(filas[0]).perform()
                 time.sleep(1)
                 
+
             cod_ventana_principal = driver.current_window_handle
             cod_ventanas = driver.window_handles
 
@@ -242,20 +241,20 @@ def descargar_session_individual(session_uid, url_web, ruta_descarga, canal, fec
                 driver.switch_to.window(cod_ventana_principal)
                 time.sleep(1)
                 
-                print(f"[{session_uid}] Descarga finalizada exitosamente.")
+                print(f"[{session_uid}] \nDescarga finalizada exitosamente.")
                 return f"Éxito: {session_uid}"
             else:
-                print(f"[{session_uid}] ERROR: No se abrió la ventana secundaria.")
-                return f"Fallo: {session_uid} - No se abrió la ventana secundaria."
+                print(f"[{session_uid}] \nERROR: No se abrió la ventana secundaria.")
+                return f"Fallo: {session_uid} \n- No se abrió la ventana secundaria."
 
     except (WebDriverException, TimeoutException) as e:
-        print(f"[{session_uid}] FALLO: Error de Selenium o Timeout: {e}")
-        return f"Fallo: {session_uid} - Error de Selenium/Timeout."
+        print(f"[{session_uid}] \nFALLO: Error de Selenium o Timeout: {e}")
+        return f"Fallo: {session_uid} \n- Error de Selenium/Timeout."
         
     except Exception as e:
-        print(f"[{session_uid}] FALLO: Ocurrió un error inesperado: {e}")
-        return f"Fallo: {session_uid} - Error inesperado."
-        
+        print(f"[{session_uid}] \nFALLO: Ocurrió un error inesperado: {e}")
+        return f"Fallo: {session_uid} \n- Error inesperado."
+
     finally:
         if driver:
             driver.quit()
@@ -269,7 +268,7 @@ if __name__ == '__main__':
 
         if canal == 'AUTOSERVICIO':    
             ruta_canal = glob.glob(r'C:\Users\bbartolome\Downloads\AUTOSERVICIO\*')
-            ruta_descarga = glob.glob(r'C:\Users\bbartolome\Desktop\CODBARRA\CARPETA1\*')
+            ruta_descarga = glob.glob(r'C:\Users\bbartolome\Desktop\CODBARRA\CARPETA2\*')
         else:
             ruta_canal = glob.glob(r'C:\Users\bbartolome\Downloads\C-STORE\*')
             ruta_descarga = glob.glob(r'C:\Users\bbartolome\Desktop\CODBARRA\CARPETA1\*' )
@@ -289,7 +288,7 @@ if __name__ == '__main__':
 
     def mover_descargas(opcion):
         
-        rt2 = f'\{opcion}'
+        rt2 = rf'\{opcion}'
         rt1 = r"C:\Users\bbartolome\Downloads"
         ruta_origen = rt1 + rt2
 
@@ -359,9 +358,9 @@ if __name__ == '__main__':
 
     opcion = Canal_Lindley()
     ruta_descarga = r'C:\Users\bbartolome\Downloads'
-    canal = f"\{opcion}"
+    canal = rf"\{opcion}"
     
-    fechas = ['01/01/2026', '01/20/2026'] #"mm/dd/yyyy"
+    fechas = ['01/21/2026', '01/21/2026'] #"mm/dd/yyyy"
     opciones = ['',f'{opcion}']
     
     load_dotenv(dotenv_path='credenciales.env')
@@ -483,7 +482,14 @@ if __name__ == '__main__':
         Concurrencia(lista_rezagados)
         mover_descargas(opcion)
 
+    try:
+        requests.post(
+        "https://ntfy.sh/descarga_auto_chunk",
+        data="El proceso terminó",
+        timeout=10
+        )
 
-    requests.post("https://ntfy.sh/descarga_auto_chunk", data="El proceso terminó")
+    except requests.exceptions.RequestException as e:
+        print(f"[WARN] No se pudo enviar notificación ntfy: {e}")
     
 
