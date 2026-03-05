@@ -87,7 +87,7 @@ def descargar_session_individual(session_uid, url_web, ruta_descarga, canal, fec
 
     pag_carga = "//div[contains(@class, 'ant-modal-content')]"
     div_excel = '/html/body/div[3]/div/ul/li[1]'
-    div_export = '/html/body/div[1]/div/div[1]/div[2]/button[3]'
+    div_export = '/html/body/div[1]/div/div[1]/div[2]/button[4]'    
     div_filtro = "/html/body/div[1]/div/div[2]/div[1]/div/div[2]/div[2]/div/div[2]/div[1]/div[2]/div[1]/div[3]/div[1]/div[2]/div[1]/div[2]/div/div/div[2]/div[2]/div/span/span"
     div_input_filtro = '/html/body/div[1]/div/div[2]/div[1]/div/div[2]/div[2]/div/div[2]/div[1]/div[2]/div[1]/div[3]/div[3]/div/div[3]/div/div/div/div/div[1]/div/input[1]'
     div_fila_css = "div.ag-row[row-index='0']"
@@ -109,8 +109,12 @@ def descargar_session_individual(session_uid, url_web, ruta_descarga, canal, fec
         print(f"[{session_uid}] \nIniciando proceso de descarga...")
         
         options_driver = webdriver.ChromeOptions()
-        options_driver.add_argument('--disable-extensions')
+        options_driver.add_argument("--disable-extensions")
         #options_driver.add_argument("--headless=new")
+        options_driver.add_argument("--window-size=1920,1080")
+        options_driver.add_argument("--disable-gpu")
+        options_driver.add_argument("--no-sandbox")
+        options_driver.add_argument("--disable-dev-shm-usage")
 
         options_driver.add_experimental_option("prefs", {
             "download.default_directory": ruta_completa_descarga,
@@ -121,6 +125,11 @@ def descargar_session_individual(session_uid, url_web, ruta_descarga, canal, fec
 
         driver = webdriver.Chrome(options=options_driver)
         driver.get(url_web)
+
+        driver.execute_cdp_cmd(
+            "Page.setDownloadBehavior",
+            {"behavior": "allow", "downloadPath": ruta_completa_descarga}
+        )
 
         inicio_sesion(driver, usuario_arca, password)
         esperar_invisibilidad(driver, pag_carga, timeout=120)
@@ -225,6 +234,7 @@ def descargar_session_individual(session_uid, url_web, ruta_descarga, canal, fec
                         
                         button_export = tipo_elemento(driver, div_export,'clickable')
                         button_export.click()
+                        
                         time.sleep(1)
                 
                 for h in cod_ventanas:
@@ -241,7 +251,7 @@ def descargar_session_individual(session_uid, url_web, ruta_descarga, canal, fec
                 driver.switch_to.window(cod_ventana_principal)
                 time.sleep(1)
                 
-                print(f"[{session_uid}] \nDescarga finalizada exitosamente.")
+                #print(f"[{session_uid}] \nDescarga finalizada exitosamente.")
                 return f"Éxito: {session_uid}"
             else:
                 print(f"[{session_uid}] \nERROR: No se abrió la ventana secundaria.")
@@ -269,13 +279,16 @@ if __name__ == '__main__':
         if canal == 'AUTOSERVICIO':    
             ruta_canal = glob.glob(r'C:\Users\bbartolome\Downloads\AUTOSERVICIO\*')
             ruta_descarga = glob.glob(r'C:\Users\bbartolome\Desktop\CODBARRA\CARPETA2\*')
-        else:
+        elif canal == 'C-STORE':
             ruta_canal = glob.glob(r'C:\Users\bbartolome\Downloads\C-STORE\*')
             ruta_descarga = glob.glob(r'C:\Users\bbartolome\Desktop\CODBARRA\CARPETA1\*' )
+        else:
+            ruta_canal = glob.glob(r'C:\Users\bbartolome\Downloads\AUTOAUDITORIA\*')
+            ruta_descarga = glob.glob(r'C:\Users\bbartolome\Desktop\CODBARRA\CARPETA3\*' )
 
         archivos_totales = ruta_canal + ruta_descarga
 
-        for f in archivos_totales:     
+        for f in archivos_totales:
             try:
                 os.remove(f)
 
@@ -295,8 +308,11 @@ if __name__ == '__main__':
         if opcion == 'C-STORE':
             ruta_destino = r'C:\Users\bbartolome\Desktop\CODBARRA\CARPETA1'
             #ruta_destino = r'C:\Users\bbartolome\OneDrive - Lock & Asociados\Gestión TI - PROYECTO LINDLEY\PBI-ACL-Archivos\Validador CSTORES_NOV'
-        else:
+        elif opcion == 'AUTOSERVICIO':
             ruta_destino = r'C:\Users\bbartolome\Desktop\CODBARRA\CARPETA2'
+            #ruta_destino = r'C:\Users\bbartolome\OneDrive - Lock & Asociados\Gestión TI - PROYECTO LINDLEY\PBI-ACL-Archivos\Validador AUTOSERVICIO_NOV'
+        else:
+            ruta_destino = r'C:\Users\bbartolome\Desktop\CODBARRA\CARPETA3'
             #ruta_destino = r'C:\Users\bbartolome\OneDrive - Lock & Asociados\Gestión TI - PROYECTO LINDLEY\PBI-ACL-Archivos\ValidarAASS_NOV'
 
         patron_excel = 'Session_export*.xlsx'
@@ -331,6 +347,7 @@ if __name__ == '__main__':
             print("\n--- MENÚ DE CANALES ---")
             print("1. Autoservicio")
             print("2. C-stores")
+            print("3. Autoauditoria")
             print("0. Salir")
             print("------------------------")
 
@@ -346,6 +363,8 @@ if __name__ == '__main__':
                     return "AUTOSERVICIO"
                 elif opcion == 2:
                     return "C-STORE"
+                elif opcion == 3:
+                    return "AUTOAUDITORIA"
                 else:
                     print(f"Opción inválida")
             
@@ -360,7 +379,7 @@ if __name__ == '__main__':
     ruta_descarga = r'C:\Users\bbartolome\Downloads'
     canal = rf"\{opcion}"
     
-    fechas = ['01/21/2026', '01/21/2026'] #"mm/dd/yyyy"
+    fechas = ['03/04/2026', '03/04/2026'] #"mm/dd/yyyy"
     opciones = ['',f'{opcion}']
     
     load_dotenv(dotenv_path='credenciales.env')
@@ -396,9 +415,13 @@ if __name__ == '__main__':
 
         if opcion == 'C-STORE':
             ruta_carga = r'C:\Users\bbartolome\Desktop\CODBARRA\CARPETA1'
-        else:
+
+        elif opcion == 'AUTOSERVICIO':
             ruta_carga = r'C:\Users\bbartolome\Desktop\CODBARRA\CARPETA2'
-        
+
+        else:
+            ruta_carga = r'C:\Users\bbartolome\Desktop\CODBARRA\CARPETA3'
+
         archivos_encontrados = glob.glob(os.path.join(ruta_carga, '*.xlsx'))
         dataframes = []
 
@@ -435,7 +458,7 @@ if __name__ == '__main__':
         Dataframe_validos = Dataframe[(Dataframe['Session Review Status'] != 'Rejected') & (Dataframe['Survey Status'] != 'InComplete')].reset_index(drop=True)
         lista_uids = Dataframe_validos['Session Uid'].tolist()
         
-        print(f"--- 1. Éxito: {len(lista_uids)} Session Uids válidos encontrados para descargar ---")
+        #print(f"--- 1. Éxito: {len(lista_uids)} Session Uids válidos encontrados para descargar ---")
 
 
     except Exception as e:
@@ -444,25 +467,32 @@ if __name__ == '__main__':
     
 #-----------------------------------------------------------------------------------------------------------------------------------------
     
-    MAX_PROCESOS = 5 # Número de navegadores/procesos concurrentes
+    MAX_PROCESOS = 6 # Número de navegadores/procesos concurrentes
 
     def Concurrencia(lista_uids):
 
         print(f"\n--- 2. INICIO DE DESCARGAS PARALELAS con {MAX_PROCESOS} procesos ---")
 
-        chunks_uids = list(dividir_en_chunks(lista_uids, 12))
+        chunks_uids = list(dividir_en_chunks(lista_uids, 8))
 
         with concurrent.futures.ProcessPoolExecutor(max_workers=MAX_PROCESOS) as executor:
             
             resultados = executor.map(
                 descargar_session_individual,
                 chunks_uids,
-                [url_web] * len(lista_uids),
-                [ruta_descarga] * len(lista_uids),
-                [canal] * len(lista_uids),
-                [fechas] * len(lista_uids),
-                [opciones] * len(lista_uids),
-                ["1"] * len(lista_uids)
+                [url_web] * len(chunks_uids),
+                [ruta_descarga] * len(chunks_uids),
+                [canal] * len(chunks_uids),
+                [fechas] * len(chunks_uids),
+                [opciones] * len(chunks_uids),
+                ["1"] * len(chunks_uids)
+                # chunks_uids,
+                # [url_web] * len(lista_uids),
+                # [ruta_descarga] * len(lista_uids),
+                # [canal] * len(lista_uids),
+                # [fechas] * len(lista_uids),
+                # [opciones] * len(lista_uids),
+                # ["1"] * len(lista_uids)
             )
             
             for resultado in resultados:
@@ -474,13 +504,14 @@ if __name__ == '__main__':
     mover_descargas(opcion)
     lista_rezagados = verificar_resultados(opcion, lista_uids)
 
-    if len(lista_rezagados) == 0:
-        print("Todas las mediciones fueron descargadas")
+    while len(lista_rezagados) > 0:
 
-    else:
         print(f"No fueron descargadas {len(lista_rezagados)} mediciones. Se retoma concurrencia\n")
         Concurrencia(lista_rezagados)
         mover_descargas(opcion)
+        lista_rezagados = verificar_resultados(opcion, lista_uids)
+
+    print("Todas las mediciones fueron descargadas")
 
     try:
         requests.post(
