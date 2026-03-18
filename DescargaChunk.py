@@ -7,6 +7,7 @@ import sys
 from dotenv import load_dotenv
 import shutil
 from collections import Counter
+from datetime import datetime
 
 from selenium import webdriver
 from selenium.webdriver.support.ui import WebDriverWait 
@@ -87,7 +88,8 @@ def descargar_session_individual(session_uid, url_web, ruta_descarga, canal, fec
 
     pag_carga = "//div[contains(@class, 'ant-modal-content')]"
     div_excel = '/html/body/div[3]/div/ul/li[1]'
-    div_export = '/html/body/div[1]/div/div[1]/div[2]/button[4]'    
+    #div_export = '/html/body/div[1]/div/div[1]/div[2]/button[4]'
+    div_export = '/html/body/div/div/div[1]/div[2]/button[3]'
     div_filtro = "/html/body/div[1]/div/div[2]/div[1]/div/div[2]/div[2]/div/div[2]/div[1]/div[2]/div[1]/div[3]/div[1]/div[2]/div[1]/div[2]/div/div/div[2]/div[2]/div/span/span"
     div_input_filtro = '/html/body/div[1]/div/div[2]/div[1]/div/div[2]/div[2]/div/div[2]/div[1]/div[2]/div[1]/div[3]/div[3]/div/div[3]/div/div/div/div/div[1]/div/input[1]'
     div_fila_css = "div.ag-row[row-index='0']"
@@ -111,7 +113,7 @@ def descargar_session_individual(session_uid, url_web, ruta_descarga, canal, fec
         options_driver = webdriver.ChromeOptions()
         options_driver.add_argument("--disable-extensions")
         #options_driver.add_argument("--headless=new")
-        options_driver.add_argument("--window-size=1920,1080")
+        #options_driver.add_argument("--window-size=1920,1080")
         options_driver.add_argument("--disable-gpu")
         options_driver.add_argument("--no-sandbox")
         options_driver.add_argument("--disable-dev-shm-usage")
@@ -379,7 +381,12 @@ if __name__ == '__main__':
     ruta_descarga = r'C:\Users\bbartolome\Downloads'
     canal = rf"\{opcion}"
     
-    fechas = ['03/04/2026', '03/04/2026'] #"mm/dd/yyyy"
+    hoy = datetime.now()
+
+    fecha_actual = hoy.strftime("%m/%d/%Y")
+
+    fechas = [fecha_actual, fecha_actual] #"mm/dd/yyyy"
+    #fechas = ['03/16/2026', '03/16/2026'] #"mm/dd/yyyy"
     opciones = ['',f'{opcion}']
     
     load_dotenv(dotenv_path='credenciales.env')
@@ -458,7 +465,7 @@ if __name__ == '__main__':
         Dataframe_validos = Dataframe[(Dataframe['Session Review Status'] != 'Rejected') & (Dataframe['Survey Status'] != 'InComplete')].reset_index(drop=True)
         lista_uids = Dataframe_validos['Session Uid'].tolist()
         
-        #print(f"--- 1. Éxito: {len(lista_uids)} Session Uids válidos encontrados para descargar ---")
+        print(f"--- 1. Éxito: {len(lista_uids)} Session Uids válidos encontrados para descargar ---")
 
 
     except Exception as e:
@@ -522,5 +529,3 @@ if __name__ == '__main__':
 
     except requests.exceptions.RequestException as e:
         print(f"[WARN] No se pudo enviar notificación ntfy: {e}")
-    
-
