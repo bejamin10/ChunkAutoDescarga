@@ -111,9 +111,11 @@ def descargar_session_individual(session_uid, url_web, ruta_descarga, canal, fec
         print(f"[{session_uid}] \nIniciando proceso de descarga...")
         
         options_driver = webdriver.ChromeOptions()
+        options_driver.add_argument('--start-maximized')
         options_driver.add_argument("--disable-extensions")
         #options_driver.add_argument("--headless=new")
         #options_driver.add_argument("--window-size=1920,1080")
+        
         options_driver.add_argument("--disable-gpu")
         options_driver.add_argument("--no-sandbox")
         options_driver.add_argument("--disable-dev-shm-usage")
@@ -385,8 +387,8 @@ if __name__ == '__main__':
 
     fecha_actual = hoy.strftime("%m/%d/%Y")
 
-    fechas = [fecha_actual, fecha_actual] #"mm/dd/yyyy"
-    #fechas = ['03/16/2026', '03/16/2026'] #"mm/dd/yyyy"
+    #fechas = [fecha_actual, fecha_actual] #"mm/dd/yyyy"
+    fechas = ['03/01/2026', '03/22/2026'] #"mm/dd/yyyy"
     opciones = ['',f'{opcion}']
     
     load_dotenv(dotenv_path='credenciales.env')
