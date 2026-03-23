@@ -7,6 +7,7 @@ import sys
 from dotenv import load_dotenv
 import shutil
 from collections import Counter
+from datetime import datetime
 
 from selenium import webdriver
 from selenium.webdriver.support.ui import WebDriverWait 
@@ -87,9 +88,11 @@ def descargar_session_individual(session_uid, url_web, ruta_descarga, canal, fec
 
     pag_carga = "//div[contains(@class, 'ant-modal-content')]"
     div_excel = '/html/body/div[3]/div/ul/li[1]'
-    div_export = '/html/body/div[1]/div/div[1]/div[2]/button[4]'    
+    #div_export = '/html/body/div[1]/div/div[1]/div[2]/button[4]'
+    div_export = '/html/body/div/div/div[1]/div[2]/button[3]'
     div_filtro = "/html/body/div[1]/div/div[2]/div[1]/div/div[2]/div[2]/div/div[2]/div[1]/div[2]/div[1]/div[3]/div[1]/div[2]/div[1]/div[2]/div/div/div[2]/div[2]/div/span/span"
-    div_input_filtro = '/html/body/div[1]/div/div[2]/div[1]/div/div[2]/div[2]/div/div[2]/div[1]/div[2]/div[1]/div[3]/div[3]/div/div[3]/div/div/div/div/div[1]/div/input[1]'
+    #div_input_filtro = '/html/body/div[1]/div/div[2]/div[1]/div/div[2]/div[2]/div/div[2]/div[1]/div[2]/div[1]/div[3]/div[3]/div/div[3]/div/div/div/div/div[1]/div/input[1]'
+    div_input_filtro_multi = '/html/body/div/div/div[2]/div[1]/div/div[2]/div[2]/div/div[2]/div[1]/div[2]/div[1]/div[3]/div[3]/div/div[3]/div/div/div/div/div[1]/div/input[2]'
     div_fila_css = "div.ag-row[row-index='0']"
 
     #NUEVOS PATHS
@@ -111,7 +114,7 @@ def descargar_session_individual(session_uid, url_web, ruta_descarga, canal, fec
         options_driver = webdriver.ChromeOptions()
         options_driver.add_argument("--disable-extensions")
         #options_driver.add_argument("--headless=new")
-        options_driver.add_argument("--window-size=1920,1080")
+        #options_driver.add_argument("--window-size=1920,1080")
         options_driver.add_argument("--disable-gpu")
         options_driver.add_argument("--no-sandbox")
         options_driver.add_argument("--disable-dev-shm-usage")
@@ -136,13 +139,13 @@ def descargar_session_individual(session_uid, url_web, ruta_descarga, canal, fec
         click_survey(driver)
         time.sleep(1)
 
-        for i in range(2,9):
+        for i in range(4,9):
 
-            if i == 2 or i == 8:
+            if i == 8:
                 div_org_c_store = opciones_div(i,'filtro')
                 input_org_c_tore = tipo_elemento(driver,div_org_c_store,'clickable')
-                input_org_c_tore.send_keys(opciones[math.floor(math.sqrt(i))-1])
-                time.sleep(2)
+                input_org_c_tore.send_keys(opciones[i-8])
+                time.sleep(1)
                 input_org_c_tore.send_keys(Keys.ENTER)
                 time.sleep(1)
 
@@ -155,7 +158,28 @@ def descargar_session_individual(session_uid, url_web, ruta_descarga, canal, fec
                 time.sleep(1)
                 input_fecha.send_keys(fechas[i - 4])
                 input_fecha.send_keys(Keys.ENTER)
-                time.sleep(2)
+                time.sleep(1)
+
+        # for i in range(2,9):
+
+        #     if i == 2 or i == 8:
+        #         div_org_c_store = opciones_div(i,'filtro')
+        #         input_org_c_tore = tipo_elemento(driver,div_org_c_store,'clickable')
+        #         input_org_c_tore.send_keys(opciones[math.floor(math.sqrt(i))-1])
+        #         time.sleep(2)
+        #         input_org_c_tore.send_keys(Keys.ENTER)
+        #         time.sleep(1)
+
+        #     elif i == 4 or i == 5:
+        #         div_fechas = opciones_div(i, 'filtro')
+        #         input_fecha = tipo_elemento(driver, div_fechas,'clickable')
+        #         input_fecha.send_keys(Keys.CONTROL + 'a')
+        #         time.sleep(1)
+        #         input_fecha.send_keys(Keys.CLEAR)
+        #         time.sleep(1)
+        #         input_fecha.send_keys(fechas[i - 4])
+        #         input_fecha.send_keys(Keys.ENTER)
+        #         time.sleep(2)
         
         button_search = tipo_elemento(driver, div_apply_filtro_survey,'clickable')
         button_search.click()
@@ -188,36 +212,67 @@ def descargar_session_individual(session_uid, url_web, ruta_descarga, canal, fec
 
             print("Se logró descargar listado \n")
 
-        else:
+        else: 
+
+            sessions_str = ",".join(session_uid)
+
+            filtro = driver.find_element(By.XPATH,div_filtro)
+            driver.execute_script("arguments[0].click();", filtro)
+            time.sleep(0.5)
+
+            input_id_session = tipo_elemento(driver,div_input_filtro_multi,'clickable')
+            time.sleep(0.5)
+            #input_id_session.send_keys(Keys.CONTROL + 'a')
+            #time.sleep(0.5)
+            #input_id_session.send_keys(Keys.DELETE)
+            #time.sleep(0.5)
             
-            for session in session_uid:
+            input_id_session.send_keys(sessions_str) 
+            time.sleep(0.5)
+            input_id_session.send_keys(Keys.ENTER)
+            time.sleep(0.5)
 
-                filtro = driver.find_element(By.XPATH,div_filtro)
-                driver.execute_script("arguments[0].click();", filtro)
-                time.sleep(0.5)
+            fila_aparece_2 = tipo_elemento_css(driver, div_fila_css, 'css', timeout=120)
+            fila_aparece_2.text
+            
+            for i in range(len(session_uid)):
 
-                input_id_session = tipo_elemento(driver,div_input_filtro,'clickable')
-                time.sleep(0.5)
-                input_id_session.send_keys(Keys.CONTROL + 'a')
-                time.sleep(0.5)
-                input_id_session.send_keys(Keys.DELETE)
+                iconos = tipo_elemento(driver,f"/html/body/div/div/div[2]/div[1]/div/div[2]/div[2]/div/div[2]/div[1]/div[2]/div[1]/div[3]/div[1]/div[2]/div[3]/div[1]/div[2]/div/div[{i+1}]/div[1]","clickable")
+                iconos.click()
                 time.sleep(0.5)
                 
-                input_id_session.send_keys(session) 
-                time.sleep(0.5)
-                input_id_session.send_keys(Keys.ENTER)
-                time.sleep(0.5)
-
-                fila_aparece_2 = tipo_elemento_css(driver, div_fila_css, 'css', timeout=120)
-                fila_aparece_2.text
-
-                filas = driver.find_elements(By.CSS_SELECTOR, div_fila_css)
-                ActionChains(driver).double_click(filas[0]).perform()
-                time.sleep(1)
-                
+            time.sleep(10)
 
             cod_ventana_principal = driver.current_window_handle
             cod_ventanas = driver.window_handles
+
+            #ventanas_listas = []
+
+            #while True:
+
+            #    for h in cod_ventanas:
+            #        if h == cod_ventana_principal:
+            #            continue
+
+            #        driver.switch_to.window(h)
+
+            #        try:
+            #            WebDriverWait(driver, 10).until(
+            #                lambda d: d.current_url != "about:blank"
+            #            )
+
+            #           WebDriverWait(driver, 10).until(
+            #                lambda d: d.execute_script("return document.readyState") == "complete"
+            #            )
+
+            #            ventanas_listas.append(h)
+
+            #        except TimeoutException:
+            #            print(f"Ventana {h} no lista, se ignora")
+                
+            #    if len(ventanas_listas) == len(session_uid):
+
+            #        break
 
             if len(cod_ventanas) > 1:
 
@@ -229,13 +284,13 @@ def descargar_session_individual(session_uid, url_web, ruta_descarga, canal, fec
 
                         driver.switch_to.window(h)
 
-                        esperar_invisibilidad(driver, pag_carga, timeout=10)
-                        time.sleep(1)
+                        esperar_invisibilidad(driver, pag_carga, timeout=60)
+                        time.sleep(0.5)
                         
                         button_export = tipo_elemento(driver, div_export,'clickable')
                         button_export.click()
                         
-                        time.sleep(1)
+                        time.sleep(0.5)
                 
                 for h in cod_ventanas:
 
@@ -244,12 +299,12 @@ def descargar_session_individual(session_uid, url_web, ruta_descarga, canal, fec
                         driver.switch_to.window(h)
 
                         esperar_invisibilidad(driver, pag_carga, timeout=60)
-                        time.sleep(1)
+                        time.sleep(0.5)
 
                         driver.close()
 
                 driver.switch_to.window(cod_ventana_principal)
-                time.sleep(1)
+                time.sleep(0.5)
                 
                 #print(f"[{session_uid}] \nDescarga finalizada exitosamente.")
                 return f"Éxito: {session_uid}"
@@ -379,8 +434,14 @@ if __name__ == '__main__':
     ruta_descarga = r'C:\Users\bbartolome\Downloads'
     canal = rf"\{opcion}"
     
-    fechas = ['03/04/2026', '03/04/2026'] #"mm/dd/yyyy"
-    opciones = ['',f'{opcion}']
+    hoy = datetime.now()
+
+    fecha_actual = hoy.strftime("%m/%d/%Y")
+
+    #fechas = [fecha_actual, fecha_actual] #"mm/dd/yyyy"
+    fechas = ['03/01/2026', '03/20/2026'] #"mm/dd/yyyy"
+    #opciones = ['',f'{opcion}']
+    opciones = [f'{opcion}']
     
     load_dotenv(dotenv_path='credenciales.env')
     url_web = os.getenv('ruta_web')
@@ -440,8 +501,8 @@ if __name__ == '__main__':
     
 #-----------------------------------------------------------------------------------------------------------------------------------------
 
-    eliminar_archivos_pasados(opcion)
-    descargar_session_individual("NaN", url_web, ruta_descarga, canal, fechas, opciones, "0")
+    #eliminar_archivos_pasados(opcion)
+    #descargar_session_individual("NaN", url_web, ruta_descarga, canal, fechas, opciones, "0")
 
 #-----------------------------------------------------------------------------------------------------------------------------------------
 
@@ -458,7 +519,7 @@ if __name__ == '__main__':
         Dataframe_validos = Dataframe[(Dataframe['Session Review Status'] != 'Rejected') & (Dataframe['Survey Status'] != 'InComplete')].reset_index(drop=True)
         lista_uids = Dataframe_validos['Session Uid'].tolist()
         
-        #print(f"--- 1. Éxito: {len(lista_uids)} Session Uids válidos encontrados para descargar ---")
+        print(f"--- 1. Éxito: {len(lista_uids)} Session Uids válidos encontrados para descargar ---")
 
 
     except Exception as e:
