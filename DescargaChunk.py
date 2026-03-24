@@ -23,13 +23,27 @@ import requests
 
 def descargar_session_individual(session_uid, url_web, ruta_descarga, canal, fechas, opciones, estado):
     
-    def esperar_invisibilidad(driver, ruta, timeout=120):
+    # def esperar_invisibilidad(driver, ruta, timeout=120):
+    #     try:
+    #         WebDriverWait(driver, timeout).until(EC.invisibility_of_element_located((By.XPATH, ruta)))
+    #         return True
+    #     except TimeoutException:
+    #         print(f"[{session_uid}] \nDemasiada espera por invisibilidad.")
+    #         return True 
+
+    def esperar_invisibilidad(driver,ruta , timeout=120):
+        wait = WebDriverWait(driver, timeout)
+        
         try:
-            WebDriverWait(driver, timeout).until(EC.invisibility_of_element_located((By.XPATH, ruta)))
+            wait.until(EC.invisibility_of_element_located((By.CLASS_NAME, "anticon-loading")))
+        
+            wait.until(EC.invisibility_of_element_located((By.CLASS_NAME, "ant-modal-wrap")))
+            
             return True
+        
         except TimeoutException:
-            print(f"[{session_uid}] \nDemasiada espera por invisibilidad.")
-            return True 
+            print("El modal no desapareció correctamente")
+            return False
 
     def tipo_elemento(driver, ruta, elemento, timeout=60):
         diccionario = {
@@ -241,7 +255,7 @@ def descargar_session_individual(session_uid, url_web, ruta_descarga, canal, fec
                 iconos.click()
                 time.sleep(0.5)
                 
-            time.sleep(10)
+            time.sleep(8)
 
             cod_ventana_principal = driver.current_window_handle
             cod_ventanas = driver.window_handles
@@ -439,7 +453,7 @@ if __name__ == '__main__':
     fecha_actual = hoy.strftime("%m/%d/%Y")
 
     #fechas = [fecha_actual, fecha_actual] #"mm/dd/yyyy"
-    fechas = ['03/01/2026', '03/20/2026'] #"mm/dd/yyyy"
+    fechas = ['03/23/2026', '03/23/2026'] #"mm/dd/yyyy"
     #opciones = ['',f'{opcion}']
     opciones = [f'{opcion}']
     
