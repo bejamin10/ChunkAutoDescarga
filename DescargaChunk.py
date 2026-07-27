@@ -130,6 +130,7 @@ def descargar_session_individual(session_uid, url_web, ruta_descarga, canal, fec
         print(f"[{session_uid}] \nIniciando proceso de descarga...")
         
         options_driver = webdriver.ChromeOptions()
+        options_driver.add_argument('--start-maximized')
         options_driver.add_argument("--disable-extensions")
         #options_driver.add_argument("--headless=new")
         #options_driver.add_argument("--window-size=1920,1080")
