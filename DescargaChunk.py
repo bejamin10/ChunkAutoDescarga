@@ -8,6 +8,7 @@ from dotenv import load_dotenv
 import shutil
 from collections import Counter
 from datetime import datetime
+from Conversion_parquet import ejecucion
 
 from selenium import webdriver
 from selenium.webdriver.support.ui import WebDriverWait 
@@ -19,6 +20,9 @@ from selenium.common.exceptions import TimeoutException, WebDriverException
 
 import concurrent.futures
 import requests
+import subprocess
+
+from azureEntraID import carga_a_sharepoint
 
 
 def descargar_session_individual(session_uid, url_web, ruta_descarga, canal, fechas, opciones, estado):
@@ -153,54 +157,64 @@ def descargar_session_individual(session_uid, url_web, ruta_descarga, canal, fec
         click_survey(driver)
         time.sleep(1)
 
-        for i in range(4,9):
+        for i in range(2,9):
 
-            if i == 8:
-                div_org_c_store = opciones_div(i,'filtro')
-                input_org_c_tore = tipo_elemento(driver,div_org_c_store,'clickable')
-                input_org_c_tore.send_keys(opciones[i-8])
-                time.sleep(1)
-                input_org_c_tore.send_keys(Keys.ENTER)
-                time.sleep(1)
+            if estado == "1":
 
-            elif i == 4 or i == 5:
-                div_fechas = opciones_div(i, 'filtro')
-                input_fecha = tipo_elemento(driver, div_fechas,'clickable')
-                input_fecha.send_keys(Keys.CONTROL + 'a')
-                time.sleep(1)
-                input_fecha.send_keys(Keys.CLEAR)
-                time.sleep(1)
-                input_fecha.send_keys(fechas[i - 4])
-                input_fecha.send_keys(Keys.ENTER)
-                time.sleep(1)
+                if i == 8:
+                    div_org_c_store = opciones_div(i,'filtro')
+                    input_org_c_tore = tipo_elemento(driver,div_org_c_store,'clickable')
+                    input_org_c_tore.send_keys(opciones[i-7])
+                    time.sleep(1)
+                    input_org_c_tore.send_keys(Keys.ENTER)
+                    time.sleep(1)
+
+                elif i == 4 or i == 5:
+                    div_fechas = opciones_div(i, 'filtro')
+                    input_fecha = tipo_elemento(driver, div_fechas,'clickable')
+                    input_fecha.send_keys(Keys.CONTROL + 'a')
+                    time.sleep(1)
+                    input_fecha.send_keys(Keys.CLEAR)
+                    time.sleep(1)
+                    input_fecha.send_keys(fechas[i - 4])
+                    input_fecha.send_keys(Keys.ENTER)
+                    time.sleep(1)
 
         # for i in range(2,9):
 
-        #     if i == 2 or i == 8:
-        #         div_org_c_store = opciones_div(i,'filtro')
-        #         input_org_c_tore = tipo_elemento(driver,div_org_c_store,'clickable')
-        #         input_org_c_tore.send_keys(opciones[math.floor(math.sqrt(i))-1])
-        #         time.sleep(2)
-        #         input_org_c_tore.send_keys(Keys.ENTER)
-        #         time.sleep(1)
+            if estado == "0":
 
-        #     elif i == 4 or i == 5:
-        #         div_fechas = opciones_div(i, 'filtro')
-        #         input_fecha = tipo_elemento(driver, div_fechas,'clickable')
-        #         input_fecha.send_keys(Keys.CONTROL + 'a')
-        #         time.sleep(1)
-        #         input_fecha.send_keys(Keys.CLEAR)
-        #         time.sleep(1)
-        #         input_fecha.send_keys(fechas[i - 4])
-        #         input_fecha.send_keys(Keys.ENTER)
-        #         time.sleep(2)
+                if i == 2 or i == 8:
+                    div_org_c_store = opciones_div(i,'filtro')
+                    input_org_c_tore = tipo_elemento(driver,div_org_c_store,'clickable')
+                    input_org_c_tore.send_keys(opciones[math.floor(math.sqrt(i))-1])
+                    time.sleep(2)
+                    input_org_c_tore.send_keys(Keys.ENTER)
+                    time.sleep(1)
+
+                elif i == 4 or i == 5:
+                    div_fechas = opciones_div(i, 'filtro')
+                    input_fecha = tipo_elemento(driver, div_fechas,'clickable')
+                    input_fecha.send_keys(Keys.CONTROL + 'a')
+                    time.sleep(1)
+                    input_fecha.send_keys(Keys.CLEAR)
+                    time.sleep(1)
+                    input_fecha.send_keys(fechas[i - 4])
+                    input_fecha.send_keys(Keys.ENTER)
+                    time.sleep(2)
         
         button_search = tipo_elemento(driver, div_apply_filtro_survey,'clickable')
         button_search.click()
         time.sleep(3)
-        fila_aparece_1 = tipo_elemento_css(driver, div_fila_css, 'css', timeout=120)
-        fila_aparece_1.text
 
+        try:
+            fila_aparece_1 = tipo_elemento_css(driver, div_fila_css, 'css', timeout=120)
+            fila_aparece_1.text
+
+        except:
+            print("Error al encontrar la fila")
+            return f"Fallo: {fechas[0]} - {fechas[1]} \n- No se encontraron resultados con los filtros aplicados."
+        
         
         if estado ==  "0":
 
@@ -343,19 +357,31 @@ def descargar_session_individual(session_uid, url_web, ruta_descarga, canal, fec
 
 if __name__ == '__main__':
 
-    def eliminar_archivos_pasados(canal):
+    #lista_opciones = ['AUTOSERVICIO', 'C-STORE']#, 'AUTOAUDITORIA']
+    lista_opciones = ['C-STORE']
+
+    def eliminar_archivos_pasados(canal, incompleto = False):
+        
+        carpeta_incompletos = glob.glob(r'C:\Users\bbartolome.DICHTER\OneDrive - Lock & Asociados\ESCRITORIO\VSCODE\Session Incomplete\*')
 
         if canal == 'AUTOSERVICIO':    
-            ruta_canal = glob.glob(r'C:\Users\bbartolome\Downloads\AUTOSERVICIO\*')
-            ruta_descarga = glob.glob(r'C:\Users\bbartolome\Desktop\CODBARRA\CARPETA2\*')
+            ruta_canal = glob.glob(r'C:\Users\bbartolome.DICHTER\Downloads\AUTOSERVICIO\*')
+            ruta_descarga = glob.glob(r'C:\Users\bbartolome.DICHTER\OneDrive - Lock & Asociados\ESCRITORIO\CODBARRA\CARPETA2\*')
         elif canal == 'C-STORE':
-            ruta_canal = glob.glob(r'C:\Users\bbartolome\Downloads\C-STORE\*')
-            ruta_descarga = glob.glob(r'C:\Users\bbartolome\Desktop\CODBARRA\CARPETA1\*' )
+            ruta_canal = glob.glob(r'C:\Users\bbartolome.DICHTER\Downloads\C-STORE\*')
+            ruta_descarga = glob.glob(r'C:\Users\bbartolome.DICHTER\OneDrive - Lock & Asociados\ESCRITORIO\CODBARRA\CARPETA1\*' )
+        #else:
+        #    ruta_canal = glob.glob(r'C:\Users\bbartolome.DICHTER\Downloads\AUTOAUDITORIA\*')
+        #    ruta_descarga = glob.glob(r'C:\Users\bbartolome.DICHTER\OneDrive - Lock & Asociados\ESCRITORIO\CODBARRA\CARPETA3\*' )
         else:
-            ruta_canal = glob.glob(r'C:\Users\bbartolome\Downloads\AUTOAUDITORIA\*')
-            ruta_descarga = glob.glob(r'C:\Users\bbartolome\Desktop\CODBARRA\CARPETA3\*' )
+            ruta_canal = []
+            ruta_descarga = []
 
-        archivos_totales = ruta_canal + ruta_descarga
+        if not incompleto:
+            archivos_totales = ruta_canal + ruta_descarga
+
+        else:
+            archivos_totales = carpeta_incompletos
 
         for f in archivos_totales:
             try:
@@ -371,18 +397,18 @@ if __name__ == '__main__':
     def mover_descargas(opcion):
         
         rt2 = rf'\{opcion}'
-        rt1 = r"C:\Users\bbartolome\Downloads"
+        rt1 = r"C:\Users\bbartolome.DICHTER\Downloads"
         ruta_origen = rt1 + rt2
 
         if opcion == 'C-STORE':
-            ruta_destino = r'C:\Users\bbartolome\Desktop\CODBARRA\CARPETA1'
-            #ruta_destino = r'C:\Users\bbartolome\OneDrive - Lock & Asociados\Gestión TI - PROYECTO LINDLEY\PBI-ACL-Archivos\Validador CSTORES_NOV'
+            ruta_destino = r'C:\Users\bbartolome.DICHTER\OneDrive - Lock & Asociados\ESCRITORIO\CODBARRA\CARPETA1'
+
         elif opcion == 'AUTOSERVICIO':
-            ruta_destino = r'C:\Users\bbartolome\Desktop\CODBARRA\CARPETA2'
-            #ruta_destino = r'C:\Users\bbartolome\OneDrive - Lock & Asociados\Gestión TI - PROYECTO LINDLEY\PBI-ACL-Archivos\Validador AUTOSERVICIO_NOV'
+            ruta_destino = r'C:\Users\bbartolome.DICHTER\OneDrive - Lock & Asociados\ESCRITORIO\CODBARRA\CARPETA2'
+            
         else:
-            ruta_destino = r'C:\Users\bbartolome\Desktop\CODBARRA\CARPETA3'
-            #ruta_destino = r'C:\Users\bbartolome\OneDrive - Lock & Asociados\Gestión TI - PROYECTO LINDLEY\PBI-ACL-Archivos\ValidarAASS_NOV'
+            ruta_destino = r'C:\Users\bbartolome.DICHTER\OneDrive - Lock & Asociados\ESCRITORIO\CODBARRA\CARPETA3'
+            
 
         patron_excel = 'Session_export*.xlsx'
         ruta_patron = os.path.join(ruta_origen, patron_excel)
@@ -410,60 +436,6 @@ if __name__ == '__main__':
 
 #-----------------------------------------------------------------------------------------------------------------------------------------
 
-    def Canal_Lindley():
-        
-        while True:
-            print("\n--- MENÚ DE CANALES ---")
-            print("1. Autoservicio")
-            print("2. C-stores")
-            print("3. Autoauditoria")
-            print("0. Salir")
-            print("------------------------")
-
-            entrada_usuario = input("Ingrese su opción (0 para salir): ").strip()
-            
-            try:
-                opcion = int(entrada_usuario)
-                
-                if opcion == 0:
-                    print("Saliendo del menú de canales.")
-                    return None
-                elif opcion == 1:
-                    return "AUTOSERVICIO"
-                elif opcion == 2:
-                    return "C-STORE"
-                elif opcion == 3:
-                    return "AUTOAUDITORIA"
-                else:
-                    print(f"Opción inválida")
-            
-            except ValueError:
-                print(f"Entrada inválida: No es un número. Por favor, ingrese un número.")
-
-#-----------------------------------------------------------------------------------------------------------------------------------------  
-#    VARIABLES
-#-----------------------------------------------------------------------------------------------------------------------------------------
-
-    opcion = Canal_Lindley()
-    ruta_descarga = r'C:\Users\bbartolome\Downloads'
-    canal = rf"\{opcion}"
-    
-    hoy = datetime.now()
-
-    fecha_actual = hoy.strftime("%m/%d/%Y")
-
-    #fechas = [fecha_actual, fecha_actual] #"mm/dd/yyyy"
-    fechas = ['03/23/2026', '03/23/2026'] #"mm/dd/yyyy"
-    #opciones = ['',f'{opcion}']
-    opciones = [f'{opcion}']
-    
-    load_dotenv(dotenv_path='credenciales.env')
-    url_web = os.getenv('ruta_web')
-
-    # --- 1. PROCESO SECUENCIAL PREVIO (Obtener lista de UIDs) ---
-    
-#-----------------------------------------------------------------------------------------------------------------------------------------
-
     def subir_excel(archivos_encontrados, patron):
         if not archivos_encontrados:
             print(f"No se encontró ningún archivo que coincida con el patrón: {patron}")
@@ -480,24 +452,25 @@ if __name__ == '__main__':
 
 #-----------------------------------------------------------------------------------------------------------------------------------------
 
-    def dividir_en_chunks(lista, tamanio):
-        for i in range(0,len(lista), tamanio):
-            yield lista[i:i + tamanio]
-
-#-----------------------------------------------------------------------------------------------------------------------------------------
-
-    def verificar_resultados(opcion, lista_uid):
+    def verificar_resultados(opcion, lista_uid, final = False):
 
         if opcion == 'C-STORE':
-            ruta_carga = r'C:\Users\bbartolome\Desktop\CODBARRA\CARPETA1'
+            ruta_carga = r'C:\Users\bbartolome.DICHTER\OneDrive - Lock & Asociados\ESCRITORIO\CODBARRA\CARPETA1'
 
         elif opcion == 'AUTOSERVICIO':
-            ruta_carga = r'C:\Users\bbartolome\Desktop\CODBARRA\CARPETA2'
+            ruta_carga = r'C:\Users\bbartolome.DICHTER\OneDrive - Lock & Asociados\ESCRITORIO\CODBARRA\CARPETA2'
 
         else:
-            ruta_carga = r'C:\Users\bbartolome\Desktop\CODBARRA\CARPETA3'
+            ruta_carga = r'C:\Users\bbartolome.DICHTER\OneDrive - Lock & Asociados\ESCRITORIO\CODBARRA\CARPETA3'
 
         archivos_encontrados = glob.glob(os.path.join(ruta_carga, '*.xlsx'))
+        
+        if final:
+
+            cant_descargados = len(archivos_encontrados)
+
+            return cant_descargados
+        
         dataframes = []
 
         for archivo in archivos_encontrados:
@@ -505,50 +478,29 @@ if __name__ == '__main__':
             Dataframe_resultados = pd.read_excel(archivo)
             dataframes.append(Dataframe_resultados)
 
-            if dataframes:
-                df_completo = pd.concat(dataframes, ignore_index= True)
+        if dataframes:
+            df_completo = pd.concat(dataframes, ignore_index= True)
 
         lista_resultados_uids = df_completo['SessionUID'].tolist()
         lista_faltantes = list((Counter(lista_uid) - Counter(lista_resultados_uids)).elements())
 
         return lista_faltantes
-    
-#-----------------------------------------------------------------------------------------------------------------------------------------
-
-    #eliminar_archivos_pasados(opcion)
-    #descargar_session_individual("NaN", url_web, ruta_descarga, canal, fechas, opciones, "0")
-
-#-----------------------------------------------------------------------------------------------------------------------------------------
-
-    try:
-        ruta_descargas_carpetas = ruta_descarga + canal
-        patron = os.path.join(ruta_descargas_carpetas, 'Survey*.XLSX')
-        archivos_encontrados = glob.glob(patron)
         
-        Dataframe = subir_excel(archivos_encontrados, patron)
-        
-        if Dataframe is None:
-            sys.exit(1)
-            
-        Dataframe_validos = Dataframe[(Dataframe['Session Review Status'] != 'Rejected') & (Dataframe['Survey Status'] != 'InComplete')].reset_index(drop=True)
-        lista_uids = Dataframe_validos['Session Uid'].tolist()
-        
-        print(f"--- 1. Éxito: {len(lista_uids)} Session Uids válidos encontrados para descargar ---")
+    #-----------------------------------------------------------------------------------------------------------------------------------------
 
+    def dividir_en_chunks(lista, tamanio):
+        for i in range(0,len(lista), tamanio):
+            yield lista[i:i + tamanio]
 
-    except Exception as e:
-        print(f"ERROR FATAL: Fallo en el pre-procesamiento para obtener la lista de UIDs. {e}")
-        sys.exit(1)
-    
-#-----------------------------------------------------------------------------------------------------------------------------------------
-    
-    MAX_PROCESOS = 6 # Número de navegadores/procesos concurrentes
+    #-----------------------------------------------------------------------------------------------------------------------------------------
+
+    MAX_PROCESOS = 5 # Número de navegadores/procesos concurrentes
 
     def Concurrencia(lista_uids):
 
         print(f"\n--- 2. INICIO DE DESCARGAS PARALELAS con {MAX_PROCESOS} procesos ---")
 
-        chunks_uids = list(dividir_en_chunks(lista_uids, 8))
+        chunks_uids = list(dividir_en_chunks(lista_uids, 6))
 
         with concurrent.futures.ProcessPoolExecutor(max_workers=MAX_PROCESOS) as executor:
             
@@ -575,27 +527,160 @@ if __name__ == '__main__':
                 
         print("\n--- 3. PROCESO PARALELO FINALIZADO ---\n")
 
-    Concurrencia(lista_uids)
-    mover_descargas(opcion)
-    lista_rezagados = verificar_resultados(opcion, lista_uids)
+#-----------------------------------------------------------------------------------------------------------------------------------------
+    eliminar_archivos_pasados('NaN', True)
 
-    while len(lista_rezagados) > 0:
+    for opcion in lista_opciones:
 
-        print(f"No fueron descargadas {len(lista_rezagados)} mediciones. Se retoma concurrencia\n")
-        Concurrencia(lista_rezagados)
+        # def Canal_Lindley():
+            
+        #     while True:
+        #         print("\n--- MENÚ DE CANALES ---")
+        #         print("1. Autoservicio")
+        #         print("2. C-stores")
+        #         print("3. Autoauditoria")
+        #         print("0. Salir")
+        #         print("------------------------")
+
+        #         entrada_usuario = input("Ingrese su opción (0 para salir): ").strip()
+                
+        #         try:
+        #             opcion = int(entrada_usuario)
+                    
+        #             if opcion == 0:
+        #                 print("Saliendo del menú de canales.")
+        #                 return None
+        #             elif opcion == 1:
+        #                 return "AUTOSERVICIO"
+        #             elif opcion == 2:
+        #                 return "C-STORE"
+        #             elif opcion == 3:
+        #                 return "AUTOAUDITORIA"
+        #             else:
+        #                 print(f"Opción inválida")
+                
+        #         except ValueError:
+        #             print(f"Entrada inválida: No es un número. Por favor, ingrese un número.")
+
+    #-----------------------------------------------------------------------------------------------------------------------------------------  
+    #    VARIABLES
+    #-----------------------------------------------------------------------------------------------------------------------------------------
+
+        #opcion = Canal_Lindley()
+        ruta_descarga = r'C:\Users\bbartolome.DICHTER\Downloads'
+        canal = rf"\{opcion}"
+        
+        hoy = datetime.now()
+
+        fecha_actual = hoy.strftime("%m/%d/%Y")
+
+        #fechas = [fecha_actual, fecha_actual] #"mm/dd/yyyy"
+        fechas = ['07/01/2026', '07/21/2026'] #"mm/dd/yyyy"
+        opciones = ['',f'{opcion}']
+        #opciones = [f'{opcion}']
+        
+        load_dotenv(dotenv_path='credenciales.env')
+        url_web = os.getenv('ruta_web')
+
+        # --- 1. PROCESO SECUENCIAL PREVIO (Obtener lista de UIDs) ---
+
+    #-----------------------------------------------------------------------------------------------------------------------------------------
+        eliminar_archivos_pasados(opcion, False)
+        descargar_session_individual("NaN", url_web, ruta_descarga, canal, fechas, opciones, "0")
+
+    #-----------------------------------------------------------------------------------------------------------------------------------------
+
+        try:
+            ruta_descargas_carpetas = ruta_descarga + canal
+            patron = os.path.join(ruta_descargas_carpetas, 'Survey*.XLSX')
+            archivos_encontrados = glob.glob(patron)
+            
+            Dataframe = subir_excel(archivos_encontrados, patron)
+            
+            if Dataframe is None:
+                print("\nDataframe no se inicializó\n")
+                continue
+                #sys.exit(1)
+            
+            if Dataframe.empty:
+                print("\nDataframe cargado está vacío\n")
+                continue
+                
+            Dataframe_validos = Dataframe[(Dataframe['Session Review Status'] != 'Rejected') & (Dataframe['Survey Status'] != 'InComplete')].reset_index(drop=True)
+            lista_uids = Dataframe_validos['Session Uid'].tolist()
+            Dataframe_incompletos = Dataframe[(Dataframe['Session Review Status'] != 'Rejected') & (Dataframe['Survey Status'] == 'InComplete')].reset_index(drop=True)
+            lista_incompletos = Dataframe_incompletos[['Outlet Code', 'Outlet Name', 'Survey Start Time']]
+            lista_incompletos.to_excel(fr'C:\Users\bbartolome.DICHTER\OneDrive - Lock & Asociados\ESCRITORIO\VSCODE\Session Incomplete\INCOMPLETOS_{opcion}.xlsx', index=False)
+
+            print(f"--- 1. Éxito: {len(lista_uids)} Session Uids válidos encontrados para descargar ---")
+
+
+        except Exception as e:
+            print(f"ERROR FATAL: Fallo en el pre-procesamiento para obtener la lista de UIDs. {e}")
+            continue
+            #sys.exit(1)
+        
+    #-----------------------------------------------------------------------------------------------------------------------------------------
+        Concurrencia(lista_uids)
         mover_descargas(opcion)
         lista_rezagados = verificar_resultados(opcion, lista_uids)
 
-    print("Todas las mediciones fueron descargadas")
+        while len(lista_rezagados) > 0:
 
-    try:
-        requests.post(
-        "https://ntfy.sh/descarga_auto_chunk",
-        data="El proceso terminó",
-        timeout=10
-        )
+            print(f"No fueron descargadas {len(lista_rezagados)} mediciones. Se retoma concurrencia\n")
+            Concurrencia(lista_rezagados)
+            mover_descargas(opcion)
+            lista_rezagados = verificar_resultados(opcion, lista_uids)
 
-    except requests.exceptions.RequestException as e:
-        print(f"[WARN] No se pudo enviar notificación ntfy: {e}")
+        print("Todas las mediciones fueron descargadas")
+        
+        try:
+            requests.post(
+            f"https://ntfy.sh/descarga_{opcion.lower()}",
+            data=f"El proceso de descarga {opcion} de mediciones terminó con {len(lista_uids)} UIDs descargados",
+            timeout=10
+            )
+
+        except requests.exceptions.RequestException as e:
+            print(f"[WARN] No se pudo enviar notificación ntfy: {e}")
+
+
+    # ahora = datetime.now()
+    # hora = ahora.hour
+    # minutos = ahora.minute
+
+    # if (hora == 12 and minutos >= 30) or (hora == 15 and minutos >= 30) or (hora >= 19):
+
+    #     try:
+    #         subprocess.run(
+    #             ["python", "datos.py"],
+    #             cwd=r"C:\Users\bbartolome.DICHTER\OneDrive - Lock & Asociados\ESCRITORIO\VSCODE\Reporte_OT",
+    #             check=True
+    #         )
+    #     except Exception as e:
+    #         print(f"Error generando reportes: {e}")
     
+    # else: 
+    #     print("\n--- SE GENERARÁN LOS REPORTES DESPUÉS DE LAS 12:30 PM / 3:30 PM ---")
 
+    
+    # if (hora >= 19):
+    #     print("\n--- INICIANDO CARGA A SHAREPOINT ---")
+    #     try:
+    #         subcarpetas = ["CARPETA1","CARPETA2"]
+
+    #         for opc in subcarpetas:
+    #             ejecucion(opc)
+                
+    #         carga_a_sharepoint()
+
+    #         requests.post(
+    #             "https://ntfy.sh/descarga_auto_chunk",
+    #             data="Descarga Y carga a SharePoint terminaron",
+    #             timeout=10
+    #         )
+    #     except Exception as e:
+    #         print(f"[ERROR] Fallo la carga a SharePoint: {e}")
+    
+    # else:
+    #     print("\n--- SE CARGARÁ A SHAREPOINT DESPUÉS DE LAS 8:00 PM ---")
