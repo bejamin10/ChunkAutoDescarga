@@ -36,19 +36,24 @@ def buscar_faltantes(lista_df):
         if faltantes_df:
             faltantes.append(sorted(faltantes_df))
 
-
     return faltantes
+
 
 def eliminar_faltantes(lista_df, faltantes):
 
+    todos_los_faltantes = set()
+
+    for sublista in faltantes:
+        todos_los_faltantes.update(sublista)
+
     for i, df in enumerate(lista_df):
-
-        try:
-            col = 'SessionUID' if 'SessionUID' in df.columns else 'SessionUId'
-
-            lista_df[i] = df[~df[col].isin(faltantes)]
-
-        except Exception as e:
-            print(f'Error en dataframe {i}: {e}')
+        if df is not None and not df.empty:
+            try:
+                col = 'SessionUID' if 'SessionUID' in df.columns else 'SessionUId'
+                
+                lista_df[i] = df[~df[col].isin(todos_los_faltantes)]
+                
+            except Exception as e:
+                print(f'Error procesando el dataframe {i}: {e}')
 
     return lista_df

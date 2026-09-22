@@ -1,0 +1,9 @@
+credenciales.env
+*.env
+prueba.ipynb
+*.ipynb
+document.tex
+__pycache__/
+*.pyc
+.DS_Store
+Thumbs.db

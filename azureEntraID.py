@@ -4,73 +4,23 @@ import os
 from datetime import datetime
 
 def carga_a_sharepoint():
-    carpeta_AASS = r"C:\Users\bbartolome.DICHTER\OneDrive - Lock & Asociados\ESCRITORIO\VSCODE\AutoDescargaChunk\PARQUETS AUTOSERVICIO"
-    carpeta_CSTORES = r"C:\Users\bbartolome.DICHTER\OneDrive - Lock & Asociados\ESCRITORIO\VSCODE\AutoDescargaChunk\PARQUETS C-STORES"
-    carpeta_REPORTES = r"C:\Users\bbartolome.DICHTER\OneDrive - Lock & Asociados\ESCRITORIO\VSCODE\Reporte_OT\output"
+
+    carpeta_AASS = r"C:\Users\bbartolome.DICHTER.000\OneDrive - Dichter & Neira\NUEV ESCRITORIO\VSCODE\AutoDescargaChunk\PARQUETS AUTOSERVICIO"
+    carpeta_CSTORES = r"C:\Users\bbartolome.DICHTER.000\OneDrive - Dichter & Neira\NUEV ESCRITORIO\VSCODE\AutoDescargaChunk\PARQUETS C-STORES"
+    carpeta_REPORTES = r"C:\Users\bbartolome.DICHTER.000\OneDrive - Dichter & Neira\NUEV ESCRITORIO\VSCODE\Reporte_OT\output"
 
     dia = datetime.now().day
     dia_str = f"{dia:02d}"
     fecha = datetime.now().month
-    fecha_str = f"{fecha:02d}"
+    mes_num = f"{fecha:02d}"
+    meses = {1: "Enero", 2: "Febrero", 3: "Marzo", 4: "Abril", 5: "Mayo", 6: "Junio", 7: "Julio", 8: "Agosto", 9: "Septiembre", 10: "Octubre", 11: "Noviembre", 12: "Diciembre"}
+    mes_str = meses[datetime.now().month]
 
     load_dotenv(dotenv_path='credenciales.env')
-    #TENANT_ID = os.getenv('tenant_id')
-    #CLIENT_ID = os.getenv('client_id')
-    #CLIENT_SECRET = os.getenv('client_secret')
 
     TENANT_ID_NUEVO = os.getenv('tenant_id_sharepoint')
     CLIENT_ID_NUEVO = os.getenv('client_id_sharepoint')
     CLIENT_SECRET_NUEVO = os.getenv('client_secret_sharepoint')
-
-
-    #-------------------------------
-    #-------ANTIGUO SHAREPOINT------
-    #-------------------------------
-
-    # url = f"https://login.microsoftonline.com/{TENANT_ID}/oauth2/v2.0/token"
-
-    # data = {
-    #     "grant_type": "client_credentials",
-    #     "client_id": CLIENT_ID,
-    #     "client_secret": CLIENT_SECRET,
-    #     "scope": "https://graph.microsoft.com/.default"
-    # }
-
-    # response = requests.post(url, data=data)
-
-    # print("STATUS TOKEN:", response.status_code)
-    # #print("RESPONSE TOKEN:", response.text)
-
-    # token = response.json().get("access_token")
-
-    # if not token:
-    #     raise Exception("No se pudo obtener token")
-
-    # headers = {
-    #     "Authorization": f"Bearer {token}"
-    # }
-
-    # res = requests.get(
-    #     "https://graph.microsoft.com/v1.0/sites?search=lockyasociados",
-    #     #"https://graph.microsoft.com/v1.0/sites?search=Lock_LindleyPeru",
-    #     headers=headers
-    # )
-
-    # data_1 = res.json()
-
-    # for site in data_1["value"]:
-    #     #print(site["name"], "->", site["id"])
-    #     if site["name"] == "Lock_LindleyPeru":
-    #         site_id = site["id"]
-
-    # res = requests.get(f"https://graph.microsoft.com/v1.0/sites/{site_id}/drives", headers=headers)
-    # data_2 = res.json()
-
-    # for drive in data_2["value"]:
-    #     #print(drive["name"], "->", drive["id"])
-    #     if drive["name"] == "PBI Data Moderno":
-    #         drive_id = drive["id"]
-
 
     #-----------------------------
     #-------NUEVO SHAREPOINT------
@@ -100,7 +50,6 @@ def carga_a_sharepoint():
     }
 
     res_s = requests.get(
-        #"https://graph.microsoft.com/v1.0/sites?search=lockyasociados",
         "https://graph.microsoft.com/v1.0/sites?search=Lock_LindleyPeru",
         headers=headers_s
     )
@@ -121,39 +70,32 @@ def carga_a_sharepoint():
             drive_id_s = drive["id"]
 
 
-    # def crearCarpetasAntiguo(drive_id, carpeta_remota, headers, dia_str):
+    def crearCarpetasNueva(drive_id_s, carpeta_remota, headers_s, dia_str, tipo, mes_num, mes_str):
 
-    #     parent_path = f"{carpeta_remota}/2026/06. Junio"
+        carpeta = dia_str if tipo == 'R' else mes_str
 
-    #     url = f"https://graph.microsoft.com/v1.0/drives/{drive_id}/root:/{parent_path}:/children"
+        url_base = f"https://graph.microsoft.com/v1.0/drives/{drive_id_s}/root:/{carpeta_remota}"
+                                                                                                      
+        if tipo == 'R':
+            url = f"{url_base}/2026/{mes_num}. {mes_str}:/children"
+            carpeta = dia_str
 
-    #     body = {
-    #         "name": dia_str,
-    #         "folder": {},
-    #         "@microsoft.graph.conflictBehavior": "fail"
-    #     }
+        elif tipo == 'M' and dia_str == "01":    #Solo crea la carpeta mensual si es el primer día del mes,                                                
+            url = f"{url_base}/2026:/children"   #si no verificamos el dia, haria una verificacion de existencia de carpeta mensual todos los días y no es necesario.
+            carpeta = mes_str
 
-    #     res = requests.post(url, headers=headers, json=body)
+        else: 
+            print("No se creará carpeta. No es 01 del mes o no es tipo 'R' o 'M'.")
+            return
 
-    #     if res.status_code == 201:
-    #         print(f"Carpeta '{dia_str}' creada correctamente en sharepoint antiguo.")
-
-    #     elif res.status_code == 409:
-    #         print(f"La carpeta '{dia_str}' ya existe en sharepoint antiguo.")
-
-    #     else:
-    #         print(f"Error creando carpeta en sharepoint antiguo: {res.status_code}")
-    #         print(res.text)
-
-
-    def crearCarpetasNueva(drive_id_s, carpeta_remota, headers_s, dia_str):
-
-        parent_path = f"{carpeta_remota}/2026/06. Junio"
-
-        url = f"https://graph.microsoft.com/v1.0/drives/{drive_id_s}/root:/{parent_path}:/children"
+        # NOTA CORREGIDA: 
+        # Para crear carpetas mediante POST, microsoft graph exige que la URL termine estrictamente en ':/children'.
+        # o sea que la URL solo define la carpeta padre donde queremos guardar las cosas.
+        # aqui el campo 'name' dentro del body no pasa a segundo plano; es el unico que define el nombre
+        # de la nueva carpeta que se va a crear ('R' o 'M').
 
         body = {
-            "name": dia_str,
+            "name": carpeta, 
             "folder": {},
             "@microsoft.graph.conflictBehavior": "fail"
         }
@@ -161,65 +103,72 @@ def carga_a_sharepoint():
         res_s = requests.post(url, headers=headers_s, json=body)
 
         if res_s.status_code == 201:
-            print(f"Carpeta '{dia_str}' creada correctamente en sharepoint nuevo.")
+            print(f"Carpeta '{carpeta}' creada correctamente en {carpeta_remota}.")
 
         elif res_s.status_code == 409:
-            print(f"La carpeta '{dia_str}' ya existe en sharepoint nuevo.")
+            print(f"La carpeta '{carpeta}' ya existe en {carpeta_remota}.")
 
         else:
-            print(f"Error creando carpeta en sharepoint nuevo: {res_s.status_code}")
+            print(f"Error creando carpeta en sharepoint nuevo: {mes_str}/{res_s.status_code}")
             print(res_s.text)     
 
 
-    # def cargarArchivosSharepointAntiguo(carpeta_local, drive_id, carpeta_remota, tipo):
+    def eliminarArchivos(drive_id_s, ruta_carpeta, mes_str, headers_s):
 
-    #     if tipo == "R" or tipo == "R2":
-    #         crearCarpetasAntiguo(drive_id, carpeta_remota, headers, dia_str)
+        url_listar = f"https://graph.microsoft.com/v1.0/drives/{drive_id_s}/root:/{ruta_carpeta}/2026/{mes_str}:/children" #hijos
+        res_listar = requests.get(url_listar, headers=headers_s)
 
-    #     dic_ruta = {"M": f"https://graph.microsoft.com/v1.0/drives/{drive_id}/root:/{carpeta_remota}/2026/Junio/",
-    #                 "R": f"https://graph.microsoft.com/v1.0/drives/{drive_id}/root:/{carpeta_remota}/2026/06. Junio/{dia_str}/"}
-                    
+        if res_listar.status_code != 200:
+            print(f"Error al obtener el contenido de '{ruta_carpeta}': {res_listar.status_code}")
+            print(res_listar.text)
+            return 
 
-    #     print(carpeta_remota)
-    #     i=0
-        
-    #     for archivo in os.listdir(carpeta_local):
-    #         if archivo.endswith((".xlsx", f"{dia_str}.{fecha_str}-Cierre.pdf")):
-    #             ruta_archivo = os.path.join(carpeta_local, archivo)
+        elementos = res_listar.json().get("value", [])
 
-    #             with open(ruta_archivo, "rb") as f:
-    #                 contenido = f.read()
-                
-    #             #upload_url = f"https://graph.microsoft.com/v1.0/drives/{drive_id}/root:/Mediciones Diario/2026/Marzo/31/{archivo}:/content"
-    #             upload_url = dic_ruta[tipo] + f"{archivo}:/content"
-    #             res = requests.put(upload_url, headers=headers, data=contenido)
-                
-    #             print(f"{archivo} -> {res.status_code}")
-    #             i = i + 1
+        if not elementos:
+            print(f"La carpeta '{ruta_carpeta}' está vacía o no existe.")
+            return
 
-    #     print(f"Archivos evaluados: {i}")
-    #     print("\n")
+        print(f"Iniciando eliminación en: {ruta_carpeta}")
+        eliminados = 0
 
+        for item in elementos: #elimino por elemento
+            item_id = item["id"]
+            nombre = item["name"]
+
+            url_eliminar = f"https://graph.microsoft.com/v1.0/drives/{drive_id_s}/items/{item_id}"
+            res_delete = requests.delete(url_eliminar, headers=headers_s)
+
+            if res_delete.status_code == 204:
+                print(f" Eliminado: {nombre}")
+                eliminados += 1
+            else:
+                print(f" Error al eliminar '{nombre}': {res_delete.status_code}")
+
+        print(f"Total de elementos eliminados: {eliminados}\n")
+
+
+    #Flujo principal
     def cargarArchivosSharepointNuevo(carpeta_local, drive_id_s, carpeta_remota, tipo):
 
-        if tipo == "R" :
-            crearCarpetasNueva(drive_id_s, carpeta_remota, headers_s, dia_str)
+        crearCarpetasNueva(drive_id_s, carpeta_remota, headers_s, dia_str, tipo, mes_num,mes_str)
 
-        dic_ruta = {"R": f"https://graph.microsoft.com/v1.0/drives/{drive_id_s}/root:/{carpeta_remota}/2026/06. Junio/{dia_str}/",
-                    "M": f"https://graph.microsoft.com/v1.0/drives/{drive_id_s}/root:/{carpeta_remota}/2026/Junio/"}
-                    
+        if tipo == 'M':                   
+            eliminarArchivos(drive_id_s, carpeta_remota, mes_str, headers_s)
 
+        dic_ruta = {"R": f"https://graph.microsoft.com/v1.0/drives/{drive_id_s}/root:/{carpeta_remota}/2026/{mes_num}. {mes_str}/{dia_str}/",
+                    "M": f"https://graph.microsoft.com/v1.0/drives/{drive_id_s}/root:/{carpeta_remota}/2026/{mes_str}/"}
+        
         print(carpeta_remota)
         i=0
         
         for archivo in os.listdir(carpeta_local):
-            if archivo.endswith((f"{dia_str}.{fecha_str}.parquet", f"{dia_str}.{fecha_str}-Cierre.pdf")):
+            if archivo.endswith((f"{dia_str}.{mes_num}.parquet", f"{dia_str}.{mes_num}-Cierre.pdf")):
                 ruta_archivo = os.path.join(carpeta_local, archivo)
 
                 with open(ruta_archivo, "rb") as f:
                     contenido = f.read()
-                
-                #upload_url = f"https://graph.microsoft.com/v1.0/drives/{drive_id}/root:/Mediciones Diario/2026/Marzo/31/{archivo}:/content"
+            
                 upload_url = dic_ruta[tipo] + f"{archivo}:/content"
                 res = requests.put(upload_url, headers=headers_s, data=contenido)
                 
@@ -231,8 +180,7 @@ def carga_a_sharepoint():
 
     cargarArchivosSharepointNuevo(carpeta_AASS, drive_id_s, "Data Autoservicios","M")
     cargarArchivosSharepointNuevo(carpeta_CSTORES, drive_id_s, "Data C-Stores","M")
-    #cargarArchivosSharepointAntiguo(carpeta_REPORTES, drive_id, "Reporte OT's","R")
-    #cargarArchivosSharepointNuevo(carpeta_REPORTES, drive_id_s, "Reporte OT's","R")
+    cargarArchivosSharepointNuevo(carpeta_REPORTES, drive_id_s, "Reporte OT's","R")
 
     print("\nCarga a SharePoint finalizada.")
     
